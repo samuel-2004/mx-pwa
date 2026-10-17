@@ -1,0 +1,124 @@
+config:
+  edition: 3
+
+streams:
+
+  user_data:
+    auto_subscribe: true
+    with:
+      users_game: |
+        SELECT game_id
+        FROM users
+        WHERE id = auth.user_id()
+
+      current_user_is_admin: |
+        SELECT is_admin, is_subsection_admin
+        FROM users
+        WHERE id = auth.user_id()
+
+    queries:
+      # Current user
+      - |
+        SELECT *
+        FROM users
+        WHERE id = auth.user_id()
+
+      # Users in the same game, iff the current user is an admin
+      - |
+        SELECT *
+        FROM users
+        WHERE game_id IN (SELECT game_id FROM users_game)
+          AND true IN (
+            SELECT is_admin OR is_subsection_admin
+            FROM current_user_is_admin
+          )
+
+      # Current user's game
+      - |
+        SELECT *
+        FROM games
+        WHERE id IN (SELECT game_id FROM users_game)
+
+      # Subsections belonging to the user's game
+      - |
+        SELECT *
+        FROM subsections
+        WHERE game_id IN (SELECT game_id FROM users_game)
+
+      # Activities belonging to the user's game (excludes answer)
+      - |
+        SELECT id,
+            game_id,
+            subsection_id,
+            name,
+            answer_schema,
+            can_resubmit,
+            release_time_offset_minutes,
+            activity_order,
+            points
+        FROM activities
+        WHERE game_id IN (SELECT game_id FROM users_game)
+          AND false IN (
+            SELECT is_admin AND is_subsection_admin
+            FROM current_user_is_admin
+          )
+          AND deleted_at IS NULL
+
+      # Activities belonging to the user's game, if current user is an admin
+      - |
+        SELECT *
+        FROM activities
+        WHERE game_id IN (SELECT game_id FROM users_game)
+          AND true IN (
+            SELECT is_admin OR is_subsection_admin
+            FROM current_user_is_admin
+          )
+          AND deleted_at IS NULL
+
+      # Answers submitted by the current user, plus:
+      # - all answers if current user is an admin
+      # - answers for subsections the current user administers
+      - |
+        SELECT *
+        FROM answers
+        WHERE
+          user_id = auth.user_id()
+          OR true IN (
+            SELECT is_admin
+            FROM current_user_is_admin
+          )
+          OR (
+            true IN (
+              SELECT is_subsection_admin
+              FROM current_user_is_admin
+            )
+            AND true IN (
+              SELECT true
+              FROM activities a
+              WHERE a.id = answers.activity_id
+                AND a.subsection_id IN (
+                  SELECT subsection_id
+                  FROM subsection_admins
+                  WHERE user_id = auth.user_id()
+                )
+            )
+          )
+
+      # Subsections the current user administers
+      - |
+        SELECT *
+        FROM subsection_admins
+        WHERE user_id = auth.user_id()
+          OR user_id IN (
+            SELECT subsection_admins.user_id
+            FROM users
+            WHERE id = auth.user_id()
+              AND is_admin = true
+          )
+
+      # The current user's own tags and map pins. Never anyone else's,
+      # admins included.
+      - |
+        SELECT *
+        FROM user_activity_notes
+        WHERE user_id = auth.user_id()
