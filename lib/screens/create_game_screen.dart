@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../auth/auth_state.dart';
 import '../auth/validators.dart';
 import '../data/admin_api.dart';
+import '../layout/app_scaffold.dart';
 import '../orient_ui/button.dart';
 import '../orient_ui/info_banner.dart';
 import '../router/routes.dart';
@@ -77,8 +78,8 @@ class _CreateGameScreenState extends State<CreateGameScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Create a game')),
+    return ScrollAwareScaffold(
+      title: 'Create a game',
       body: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 400),

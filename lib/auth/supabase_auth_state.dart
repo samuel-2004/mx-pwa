@@ -72,7 +72,9 @@ class SupabaseAuthState extends AuthState {
     final result = await _client
         .rpc('debug_auth_context');
 
-    debugPrint('Auth context: $result');
+    if (kDebugMode) {
+      debugPrint('Auth context: $result');
+    }
   }
 
   @override

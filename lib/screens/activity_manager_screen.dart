@@ -43,6 +43,9 @@ import '../widgets/popups.dart';
 import '../widgets/surface_card.dart';
 
 const int _maxPoints = 1000000;
+
+enum _ManagerAction { newSubsection, export, import }
+
 const int _maxOffsetMinutes = 525600;
 const int _maxBulkCount = 50;
 // Leaves room for " 50" so numbered names stay within the 200 character limit.
@@ -373,10 +376,11 @@ class _ManagerPageState extends State<_ManagerPage> {
         settings.get<bool>(allowResubmissionOptionKey) ?? true;
     final Set<String> adminOnlySubmissions =
         adminOnlySubmissionSubsections(settings.options);
-    // The bottom padding keeps the last row clear of the three floating
-    // buttons stacked at the bottom right.
+    final bool isSmallScreen =
+        MediaQuery.of(context).size.width < Style.breakpoints.desktop;
+    // On desktop the padding keeps the last row clear of the stacked actions.
     return ListView(
-      padding: const EdgeInsets.only(bottom: 176),
+      padding: EdgeInsets.only(bottom: isSmallScreen ? 16 : 176),
       children: <Widget>[
         for (final ManagedSubsection s in subsections)
           _SectionTile(
@@ -478,6 +482,57 @@ class _ManagerPageState extends State<_ManagerPage> {
     );
   }
 
+  Widget _smallScreenAction(bool allowResubmission) {
+    return PopupMenuButton<_ManagerAction>(
+      tooltip: 'Activity actions',
+      onSelected: (_ManagerAction action) {
+        switch (action) {
+          case _ManagerAction.newSubsection:
+            _newSubsection(allowResubmission: allowResubmission);
+          case _ManagerAction.export:
+            _export();
+          case _ManagerAction.import:
+            _import(allowResubmission: allowResubmission);
+        }
+      },
+      itemBuilder: (BuildContext context) => <PopupMenuEntry<_ManagerAction>>[
+        const PopupMenuItem<_ManagerAction>(
+          value: _ManagerAction.newSubsection,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              Icon(Icons.create_new_folder_outlined),
+              SizedBox(width: 12),
+              Text('New subsection'),
+            ],
+          ),
+        ),
+        const PopupMenuItem<_ManagerAction>(
+          value: _ManagerAction.export,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              Icon(Icons.file_download_outlined),
+              SizedBox(width: 12),
+              Text('Export'),
+            ],
+          ),
+        ),
+        const PopupMenuItem<_ManagerAction>(
+          value: _ManagerAction.import,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              Icon(Icons.file_upload_outlined),
+              SizedBox(width: 12),
+              Text('Import'),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<GameSettings?>(
@@ -496,6 +551,7 @@ class _ManagerPageState extends State<_ManagerPage> {
             settings.get<bool>(allowResubmissionOptionKey) ?? true;
         return AppScaffold(
           title: 'Activities',
+          smallScreenAction: _smallScreenAction(allowResubmission),
           floatingActionButton: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.end,

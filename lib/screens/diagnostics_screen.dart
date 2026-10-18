@@ -4,6 +4,7 @@ import 'package:supabase_flutter/supabase_flutter.dart' show Session, Supabase;
 
 import '../auth/auth_state.dart';
 import '../config/app_config.dart';
+import '../layout/app_scaffold.dart';
 import '../orient_ui/button.dart';
 import '../orient_ui/style.dart';
 import '../powersync/schema.dart' show schema;
@@ -88,8 +89,8 @@ class _DiagnosticsScreenState extends State<DiagnosticsScreen> {
   @override
   Widget build(BuildContext context) {
     final Session? session = Supabase.instance.client.auth.currentSession;
-    return Scaffold(
-      appBar: AppBar(title: const Text('Diagnostics')),
+    return ScrollAwareScaffold(
+      title: 'Diagnostics',
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: <Widget>[

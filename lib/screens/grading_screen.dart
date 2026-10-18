@@ -16,6 +16,8 @@ import '../layout/format.dart';
 import '../orient_ui/button.dart';
 import '../orient_ui/empty_state.dart';
 import '../orient_ui/info_banner.dart';
+import '../orient_ui/picker.dart';
+import '../orient_ui/search_field.dart';
 import '../orient_ui/style.dart';
 import '../orient_ui/tag.dart';
 import '../orient_ui/toast.dart';
@@ -27,7 +29,22 @@ import '../auth/auth_scope.dart';
 import '../router/routes.dart';
 
 // The ceiling when an activity has no points set.
-const int _maxPoints = 1000000;
+const int _maxPoints = 2147483647;
+const String _allSubsections = '';
+
+enum _ActivityTypeFilter {
+  all(null, 'All types'),
+  shortAnswer(AnswerType.shortAnswer, 'Short answer'),
+  multipleChoice(AnswerType.multipleChoice, 'Multiple choice'),
+  checkbox(AnswerType.checkbox, 'Checkbox'),
+  image(AnswerType.image, 'Image'),
+  location(AnswerType.geo, 'Location');
+
+  const _ActivityTypeFilter(this.type, this.label);
+
+  final AnswerType? type;
+  final String label;
+}
 
 /// Review submitted answers and give them points. Admins see every answer in
 /// their game; subsection admins only their own subsections. The server
@@ -45,6 +62,12 @@ class _GradingScreenState extends State<GradingScreen> {
   Object? _loadError;
   bool _loading = true;
   bool _includeGraded = false;
+  String _subsectionFilter = _allSubsections;
+  _ActivityTypeFilter _activityTypeFilter = _ActivityTypeFilter.all;
+  String _usernameQuery = '';
+  String _activityQuery = '';
+  final TextEditingController _usernameSearch = TextEditingController();
+  final TextEditingController _activitySearch = TextEditingController();
 
   @override
   void initState() {
@@ -77,6 +100,114 @@ class _GradingScreenState extends State<GradingScreen> {
       _loadError = null;
     });
     _load();
+  }
+
+  @override
+  void dispose() {
+    _usernameSearch.dispose();
+    _activitySearch.dispose();
+    super.dispose();
+  }
+
+  List<GradingItem> _filterItems(List<GradingItem> items) {
+    return <GradingItem>[
+      for (final GradingItem item in items)
+        if ((_subsectionFilter == _allSubsections ||
+                item.subsectionName == _subsectionFilter) &&
+            (_activityTypeFilter.type == null ||
+                parseAnswerParts(item.answerJson).any(
+                  (AnswerPartView part) =>
+                      part.type == _activityTypeFilter.type,
+                )) &&
+            item.username.toLowerCase().contains(_usernameQuery) &&
+            ('${item.activityName} ${item.activityDescription}'
+                .toLowerCase()
+                .contains(_activityQuery)))
+          item,
+    ];
+  }
+
+  Widget _filters(List<GradingItem> items) {
+    final List<String> subsections = <String>{
+      for (final GradingItem item in items)
+        if (item.subsectionName != null && item.subsectionName!.isNotEmpty)
+          item.subsectionName!,
+    }.toList()
+      ..sort();
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        spacing: 8,
+        children: <Widget>[
+          LayoutBuilder(
+            builder: (BuildContext context, BoxConstraints constraints) {
+              final double fieldWidth = constraints.maxWidth >= 600
+                  ? (constraints.maxWidth - 8) / 2
+                  : constraints.maxWidth;
+              return Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: <Widget>[
+                  SizedBox(
+                    width: fieldWidth,
+                    child: Picker<String>(
+                      label: 'Subsection',
+                      value: _subsectionFilter,
+                      items: <String>[_allSubsections, ...subsections],
+                      itemLabel: (String value) => value.isEmpty
+                          ? 'All subsections'
+                          : value,
+                      onChanged: (String value) => setState(() {
+                        _subsectionFilter = value;
+                      }),
+                    ),
+                  ),
+                  SizedBox(
+                    width: fieldWidth,
+                    child: Picker<_ActivityTypeFilter>(
+                      label: 'Activity type',
+                      value: _activityTypeFilter,
+                      items: _ActivityTypeFilter.values,
+                      itemLabel: (_ActivityTypeFilter filter) => filter.label,
+                      onChanged: (_ActivityTypeFilter filter) => setState(() {
+                        _activityTypeFilter = filter;
+                      }),
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
+          SearchField(
+            controller: _usernameSearch,
+            placeholder: 'Filter by user',
+            onChanged: (String value) => setState(() {
+              _usernameQuery = value.trim().toLowerCase();
+            }),
+          ),
+          SearchField(
+            controller: _activitySearch,
+            placeholder: 'Search activities',
+            onChanged: (String value) => setState(() {
+              _activityQuery = value.trim().toLowerCase();
+            }),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _clearFilters() {
+    _usernameSearch.clear();
+    _activitySearch.clear();
+    setState(() {
+      _subsectionFilter = _allSubsections;
+      _activityTypeFilter = _ActivityTypeFilter.all;
+      _usernameQuery = '';
+      _activityQuery = '';
+    });
   }
 
   /// Saves a grade. Returns an error message, or null on success.
@@ -127,11 +258,22 @@ class _GradingScreenState extends State<GradingScreen> {
             _includeGraded ? 'No answers yet.' : 'Nothing waiting to be graded.',
       );
     }
+    final List<GradingItem> filteredItems = _filterItems(items);
+    if (filteredItems.isEmpty) {
+      return EmptyState(
+        title: 'No answers match these filters.',
+        action: Button.small(
+          label: 'Clear filters',
+          variant: ButtonVariant.outline,
+          onPressed: _clearFilters,
+        ),
+      );
+    }
     return ListView.builder(
       padding: const EdgeInsets.only(bottom: 88),
-      itemCount: items.length,
+      itemCount: filteredItems.length,
       itemBuilder: (BuildContext context, int index) {
-        final GradingItem item = items[index];
+        final GradingItem item = filteredItems[index];
         return _GradeCard(
           key: ValueKey<String>(item.answerId),
           item: item,
@@ -165,6 +307,8 @@ class _GradingScreenState extends State<GradingScreen> {
               },
             ),
           ),
+          if (!_loading && _loadError == null && (_items?.isNotEmpty ?? false))
+            _filters(_items!),
           Expanded(child: _body()),
         ],
       ),

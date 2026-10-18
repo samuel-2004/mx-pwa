@@ -11,6 +11,8 @@ import '../orient_ui/confirmation_popup.dart';
 import '../orient_ui/empty_state.dart';
 import '../orient_ui/multi_choice_tile.dart';
 import '../orient_ui/popover_menu.dart';
+import '../orient_ui/picker.dart';
+import '../orient_ui/search_field.dart';
 import '../orient_ui/style.dart';
 import '../orient_ui/tappable_icon.dart';
 import '../orient_ui/tile.dart';
@@ -22,6 +24,17 @@ import '../widgets/surface_card.dart';
 typedef _Credentials = ({String username, String password});
 
 enum _UserAction { resetPassword, subsections, remove }
+
+enum _UserTypeFilter {
+  all('All types'),
+  admin('Admin'),
+  subsectionAdmin('Subsection admin'),
+  user('Player');
+
+  const _UserTypeFilter(this.label);
+
+  final String label;
+}
 
 String _messageFor(Object error) => error is AdminApiException
     ? error.message
@@ -39,6 +52,9 @@ class UsersScreen extends StatefulWidget {
 class _UsersScreenState extends State<UsersScreen> {
   final AdminApi _api = AdminApi();
   late Future<UserDirectory> _directory;
+  _UserTypeFilter _userTypeFilter = _UserTypeFilter.all;
+  String _usernameQuery = '';
+  final TextEditingController _usernameSearch = TextEditingController();
 
   @override
   void initState() {
@@ -47,6 +63,12 @@ class _UsersScreenState extends State<UsersScreen> {
   }
 
   void _reload() => setState(() => _directory = _api.loadDirectory());
+
+  @override
+  void dispose() {
+    _usernameSearch.dispose();
+    super.dispose();
+  }
 
   Future<void> _run(Future<void> Function() action, String success) async {
     try {
@@ -222,30 +244,92 @@ class _UsersScreenState extends State<UsersScreen> {
             );
           }
           final UserDirectory directory = snap.requireData;
-          final List<GameUser> users = _sortedUsers(
+          final List<GameUser> sortedUsers = _sortedUsers(
             directory.users,
             // Your current user's ID here.
             Supabase.instance.client.auth.currentSession?.user.id,
           );
-          if (users.isEmpty) return const EmptyState(title: 'No users yet.');
-          return ListView.builder(
-            padding: const EdgeInsets.only(bottom: 88),
-            itemCount: users.length,
-            itemBuilder: (BuildContext context, int index) {
-              final GameUser user = users[index];
-              return TileCard(
-                leading: Icon(
-                  user.isAdmin
-                      ? Icons.admin_panel_settings
-                      : (user.subsectionIds.isEmpty
-                          ? Icons.person
-                          : Icons.supervisor_account),
+          if (sortedUsers.isEmpty) {
+            return const EmptyState(title: 'No users yet.');
+          }
+          final List<GameUser> users = <GameUser>[
+            for (final GameUser user in sortedUsers)
+              if ((_userTypeFilter == _UserTypeFilter.all ||
+                      (_userTypeFilter == _UserTypeFilter.admin &&
+                          user.isAdmin) ||
+                      (_userTypeFilter == _UserTypeFilter.subsectionAdmin &&
+                          !user.isAdmin && user.subsectionIds.isNotEmpty) ||
+                      (_userTypeFilter == _UserTypeFilter.user &&
+                          !user.isAdmin && user.subsectionIds.isEmpty)) &&
+                  user.username.toLowerCase().contains(_usernameQuery))
+                user,
+          ];
+          return Column(
+            children: <Widget>[
+              Padding(
+                padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  spacing: 8,
+                  children: <Widget>[
+                    Picker<_UserTypeFilter>(
+                      label: 'User type',
+                      value: _userTypeFilter,
+                      items: _UserTypeFilter.values,
+                      itemLabel: (_UserTypeFilter filter) => filter.label,
+                      onChanged: (_UserTypeFilter filter) => setState(() {
+                        _userTypeFilter = filter;
+                      }),
+                    ),
+                    SearchField(
+                      controller: _usernameSearch,
+                      placeholder: 'Search users',
+                      onChanged: (String value) => setState(() {
+                        _usernameQuery = value.trim().toLowerCase();
+                      }),
+                    ),
+                  ],
                 ),
-                title: user.username,
-                subtitle: _subtitle(user, directory),
-                trailing: user.isAdmin ? null : _actionsMenu(user, directory),
-              );
-            },
+              ),
+              Expanded(
+                child: users.isEmpty
+                    ? EmptyState(
+                        title: 'No users match these filters.',
+                        action: Button.small(
+                          label: 'Clear filters',
+                          variant: ButtonVariant.outline,
+                          onPressed: () {
+                            _usernameSearch.clear();
+                            setState(() {
+                              _userTypeFilter = _UserTypeFilter.all;
+                              _usernameQuery = '';
+                            });
+                          },
+                        ),
+                      )
+                    : ListView.builder(
+                        padding: const EdgeInsets.only(bottom: 88),
+                        itemCount: users.length,
+                        itemBuilder: (BuildContext context, int index) {
+                          final GameUser user = users[index];
+                          return TileCard(
+                            leading: Icon(
+                              user.isAdmin
+                                  ? Icons.admin_panel_settings
+                                  : (user.subsectionIds.isEmpty
+                                      ? Icons.person
+                                      : Icons.supervisor_account),
+                            ),
+                            title: user.username,
+                            subtitle: _subtitle(user, directory),
+                            trailing: user.isAdmin
+                                ? null
+                                : _actionsMenu(user, directory),
+                          );
+                        },
+                      ),
+              ),
+            ],
           );
         },
       ),

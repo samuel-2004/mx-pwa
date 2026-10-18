@@ -1,10 +1,12 @@
 import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart' show ScrollDirection;
 import 'package:go_router/go_router.dart';
 
 import '../auth/auth_scope.dart';
 import '../auth/auth_state.dart';
 import '../orient_ui/nav_bar.dart';
+import '../orient_ui/style.dart';
 import '../orient_ui/tappable_icon.dart';
 import '../router/routes.dart';
 import '../widgets/surface_card.dart';
@@ -34,6 +36,7 @@ class AppScaffold extends StatelessWidget {
     required this.body,
     this.actions = const <Widget>[],
     this.floatingActionButton,
+    this.smallScreenAction,
     super.key,
   });
 
@@ -46,8 +49,12 @@ class AppScaffold extends StatelessWidget {
   /// Extra app bar actions, shown before the shared ones.
   final List<Widget> actions;
 
-  /// Optional button floating at the bottom right of the content area.
+  /// Optional action shown in the app bar on small screens and floating at the
+  /// bottom right otherwise.
   final Widget? floatingActionButton;
+
+  /// Optional compact replacement for [floatingActionButton] in the app bar.
+  final Widget? smallScreenAction;
 
   // Mirrors the route guards. The server must enforce the same rules.
   List<_Destination> _destinationsFor(AuthState auth) {
@@ -75,50 +82,53 @@ class AppScaffold extends StatelessWidget {
     // NavBar asserts that it has at least two items.
     final bool showNav = destinations.length >= 2;
 
-    final Widget? floatingButton = floatingActionButton;
-    // NavBar owns the bottom bar, so Scaffold's own floating button slot
-    // would sit on top of it. Placing the button inside the content area
-    // keeps it clear of the bar.
-    final Widget content = Stack(
-      fit: StackFit.expand,
-      children: <Widget>[
-        Align(
-          alignment: Alignment.topCenter,
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: _maxContentWidth),
-            child: body,
-          ),
-        ),
-        if (floatingButton != null)
-          Positioned(
-            right: _floatingButtonInset,
-            bottom: _floatingButtonInset,
-            child: floatingButton,
-          ),
-      ],
-    );
-
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
         // A resize can briefly hand the page a ~1x1 box.
+        final bool isSmallScreen =
+            constraints.maxWidth < Style.breakpoints.desktop;
+        final Widget? floatingButton = floatingActionButton;
+        final Widget? headerAction = smallScreenAction ?? floatingButton;
+        // NavBar owns the bottom bar, so Scaffold's own floating button slot
+        // would sit on top of it. Placing the button inside the content area
+        // keeps it clear of the bar.
+        final Widget content = Stack(
+          fit: StackFit.expand,
+          children: <Widget>[
+            Align(
+              alignment: Alignment.topCenter,
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: _maxContentWidth),
+                child: body,
+              ),
+            ),
+            if (floatingButton != null && !isSmallScreen)
+              Positioned(
+                right: _floatingButtonInset,
+                bottom: _floatingButtonInset,
+                child: floatingButton,
+              ),
+          ],
+        );
+        final List<Widget> appBarActions = <Widget>[
+          ...actions,
+          if (isSmallScreen && headerAction != null) headerAction,
+          if (kDebugMode)
+            TappableIcon(
+              icon: const Icon(Icons.bug_report_outlined),
+              tooltip: 'Diagnostics',
+              onPressed: () => context.go(Routes.diagnostics),
+            ),
+          if (kDebugMode) const SizedBox(width: 8),
+        ];
         return Offstage(
           offstage: constraints.biggest.shortestSide < _minPageSide,
-          child: Scaffold(
+          child: ScrollAwareScaffold(
+            isSmallScreen: isSmallScreen,
+            resetKey: path,
+            title: title,
+            actions: appBarActions,
             backgroundColor: pageBackground(context),
-            appBar: AppBar(
-              title: Text(title),
-              actions: <Widget>[
-                ...actions,
-                if (kDebugMode)
-                  TappableIcon(
-                    icon: const Icon(Icons.bug_report_outlined),
-                    tooltip: 'Diagnostics',
-                    onPressed: () => context.go(Routes.diagnostics),
-                  ),
-                if (kDebugMode)
-                const SizedBox(width: 8),
-              ],
-            ),
             body: showNav
                 ? NavBar(
                     currentIndex: selected,
@@ -134,6 +144,148 @@ class AppScaffold extends StatelessWidget {
           ),
         );
       }
+    );
+  }
+}
+
+/// A page scaffold that hides its app bar on narrow screens while the user
+/// scrolls down, then restores it when the user scrolls up.
+class ScrollAwareScaffold extends StatefulWidget {
+  /// Creates a responsive page scaffold.
+  ///
+  /// [title] is shown in the app bar, and [body] contains the page content.
+  /// [actions] adds app bar controls. [backgroundColor] overrides the theme
+  /// color. [isSmallScreen] overrides the shared width breakpoint, and
+  /// [resetKey] restores the app bar when the displayed route changes.
+  /// Returns a [ScrollAwareScaffold] instance and does not throw.
+  const ScrollAwareScaffold({
+    required this.title,
+    required this.body,
+    this.actions = const <Widget>[],
+    this.backgroundColor,
+    this.isSmallScreen,
+    this.resetKey,
+    super.key,
+  });
+
+  /// Title shown in the app bar.
+  final String title;
+
+  /// Page content, including any scrollable widgets.
+  final Widget body;
+
+  /// Additional app bar actions.
+  final List<Widget> actions;
+
+  /// Optional scaffold background color.
+  final Color? backgroundColor;
+
+  /// Whether to use the collapsing mobile layout, if already known.
+  final bool? isSmallScreen;
+
+  /// Value that changes when the displayed route changes.
+  final Object? resetKey;
+
+  @override
+  State<ScrollAwareScaffold> createState() => _ScrollAwareScaffoldState();
+}
+
+class _ScrollAwareScaffoldState extends State<ScrollAwareScaffold> {
+  bool _showHeader = true;
+  bool? _lastSmallScreen;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final bool isSmallScreen = widget.isSmallScreen ??
+        MediaQuery.sizeOf(context).width < Style.breakpoints.desktop;
+    if (_lastSmallScreen != null && _lastSmallScreen != isSmallScreen) {
+      _showHeader = true;
+    }
+    _lastSmallScreen = isSmallScreen;
+  }
+
+  @override
+  void didUpdateWidget(ScrollAwareScaffold oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.isSmallScreen != widget.isSmallScreen ||
+        oldWidget.resetKey != widget.resetKey) {
+      _showHeader = true;
+    }
+  }
+
+  bool _onScrollNotification(ScrollNotification notification) {
+    if (notification.metrics.axis != Axis.vertical ||
+        notification is! UserScrollNotification) {
+      return false;
+    }
+
+    if (notification.direction == ScrollDirection.reverse && _showHeader) {
+      setState(() => _showHeader = false);
+    } else if (notification.direction == ScrollDirection.forward &&
+        !_showHeader) {
+      setState(() => _showHeader = true);
+    }
+    return false;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final bool isSmallScreen = widget.isSmallScreen ??
+        MediaQuery.sizeOf(context).width < Style.breakpoints.desktop;
+    final AppBar appBar = AppBar(
+      primary: !isSmallScreen,
+      title: Text(widget.title),
+      actions: widget.actions,
+    );
+    final Color backgroundColor =
+        widget.backgroundColor ?? Theme.of(context).scaffoldBackgroundColor;
+
+    if (!isSmallScreen) {
+      return Scaffold(
+        backgroundColor: backgroundColor,
+        appBar: appBar,
+        body: widget.body,
+      );
+    }
+
+    final Color headerColor = appBar.backgroundColor ??
+        Theme.of(context).appBarTheme.backgroundColor ??
+        Theme.of(context).colorScheme.surface;
+
+    return Scaffold(
+      backgroundColor: backgroundColor,
+      body: Column(
+        children: <Widget>[
+          SafeArea(
+            top: true,
+            bottom: false,
+            left: false,
+            right: false,
+            child: ColoredBox(
+              color: headerColor,
+              child: ClipRect(
+                child: AnimatedSize(
+                  alignment: Alignment.topCenter,
+                  duration: const Duration(milliseconds: 180),
+                  curve: Curves.easeInOut,
+                  child: SizedBox(
+                    width: double.infinity,
+                    height: _showHeader ? kToolbarHeight : 0,
+                    child: appBar,
+                  ),
+                ),
+              ),
+            ),
+          ),
+          Expanded(
+            child: NotificationListener<ScrollNotification>(
+              onNotification: _onScrollNotification,
+              child: widget.body,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

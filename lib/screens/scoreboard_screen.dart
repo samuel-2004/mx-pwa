@@ -102,7 +102,7 @@ class _ScoreboardScreenState extends State<ScoreboardScreen> {
             // Tile has no selected state, so the signed-in player's row is
             // filled instead.
             variant: mine ? TileVariant.filled : TileVariant.simple,
-            leading: Tag(label: '${entry.place}', color: colors.foreground),
+            leading: _PlaceMarker(place: entry.place, color: colors.foreground),
             title: mine ? '${entry.username} (you)' : entry.username,
             subtitle: entry.gradedCount == 1
                 ? '1 graded'
@@ -121,4 +121,58 @@ class _ScoreboardScreenState extends State<ScoreboardScreen> {
       body: _body(AuthScope.of(context).userId),
     );
   }
+}
+
+class _PlaceMarker extends StatelessWidget {
+  const _PlaceMarker({required this.place, required this.color});
+
+  final int place;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return switch (place) {
+      1 => const SizedBox(
+          width: 24,
+          height: 24,
+          child: CustomPaint(painter: _CrownPainter()),
+        ),
+      2 => const Icon(Icons.military_tech, color: Color(0xFF9AA3AD), size: 26),
+      3 => const Icon(Icons.military_tech, color: Color(0xFFB87333), size: 26),
+      _ => Tag(label: '$place', color: color),
+    };
+  }
+}
+
+class _CrownPainter extends CustomPainter {
+  const _CrownPainter();
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final Paint paint = Paint()
+      ..color = const Color(0xFFFFC107)
+      ..style = PaintingStyle.fill;
+    final Path crown = Path()
+      ..moveTo(size.width * 0.12, size.height * 0.32)
+      ..lineTo(size.width * 0.34, size.height * 0.53)
+      ..lineTo(size.width * 0.48, size.height * 0.15)
+      ..lineTo(size.width * 0.65, size.height * 0.53)
+      ..lineTo(size.width * 0.88, size.height * 0.32)
+      ..lineTo(size.width * 0.78, size.height * 0.85)
+      ..lineTo(size.width * 0.22, size.height * 0.85)
+      ..close();
+    canvas.drawPath(crown, paint);
+    canvas.drawRect(
+      Rect.fromLTWH(
+        size.width * 0.2,
+        size.height * 0.88,
+        size.width * 0.6,
+        size.height * 0.1,
+      ),
+      paint,
+    );
+  }
+
+  @override
+  bool shouldRepaint(_CrownPainter oldDelegate) => false;
 }

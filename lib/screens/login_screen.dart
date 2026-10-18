@@ -9,6 +9,7 @@ import '../orient_ui/tappable_icon.dart';
 import '../router/routes.dart';
 import '../auth/validators.dart';
 import '../data/admin_api.dart';
+import '../layout/app_scaffold.dart';
 
 /// Sign-in for everyone: username, password and game code.
 class LoginScreen extends StatefulWidget {
@@ -134,8 +135,8 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget build(BuildContext context) {
     final bool isGameCodeReadOnly = widget.gameCode != null && widget.gameCode!.isNotEmpty;
 
-    return Scaffold(
-      appBar: AppBar(title: const Text('Sign in')),
+    return ScrollAwareScaffold(
+      title: 'Sign in',
       body: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 400),
