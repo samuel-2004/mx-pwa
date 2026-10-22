@@ -68,12 +68,12 @@ class SupabaseAuthState extends AuthState {
     );
 
 
-    // TODO temp
-    final result = await _client
-        .rpc('debug_auth_context');
-
-    if (kDebugMode) {
-      debugPrint('Auth context: $result');
+    // This diagnostic is optional; auth startup must not depend on it.
+    try {
+      final Object? result = await _client.rpc('debug_auth_context');
+      if (kDebugMode) debugPrint('Auth context: $result');
+    } on Exception catch (e) {
+      if (kDebugMode) debugPrint('Auth context diagnostic failed: $e');
     }
   }
 

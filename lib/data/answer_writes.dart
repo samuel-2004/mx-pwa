@@ -15,6 +15,8 @@ import 'game_options.dart'
     show
         adminOnlySubmissionSubsections,
         allowResubmissionOptionKey,
+        gameOptionDateTime,
+        isGameWindowOpenAt,
         gameOptionBool;
 
 const String _bucket = 'submissions';
@@ -43,6 +45,8 @@ class SubmitActivity {
     required this.adminOnlySubmission,
     required this.points,
     required this.releaseAt,
+    required this.gameStartsAt,
+    required this.gameEndsAt,
   });
 
   final String id;
@@ -56,6 +60,8 @@ class SubmitActivity {
   final bool adminOnlySubmission;
   final int? points;
   final DateTime? releaseAt;
+  final DateTime? gameStartsAt;
+  final DateTime? gameEndsAt;
 
   /// Returns the release time if it is still in the future at [now], else
   /// null.
@@ -64,6 +70,16 @@ class SubmitActivity {
     if (at == null || !at.isAfter(now)) return null;
     return at;
   }
+
+  /// Checks whether this activity is inside its game's schedule window.
+  ///
+  /// [now] is the current time. Returns false outside the window; does not
+  /// throw.
+  bool gameWindowIsOpenAt(DateTime now) => isGameWindowOpenAt(
+        now: now,
+        startsAt: gameStartsAt,
+        endsAt: gameEndsAt,
+      );
 }
 
 /// A user's most recent submission for one activity.
@@ -180,6 +196,8 @@ Future<SubmitActivity?> loadSubmitActivity(
       row['starts_at'] as String?,
       (row['offset_minutes'] as int?) ?? 0,
     ),
+    gameStartsAt: gameOptionDateTime(options, 'starts_at'),
+    gameEndsAt: gameOptionDateTime(options, 'ends_at'),
   );
 }
 

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:flutter/foundation.dart' show debugPrint, kDebugMode;
@@ -61,6 +62,7 @@ class _SubmitAnswerScreenState extends State<SubmitAnswerScreen> {
   String? _selectedUserId;
   String? _latestFor;
   Future<LatestAnswer?>? _latest;
+  Timer? _clock;
   bool _checked = false;
   final Set<String> _selected = <String>{};
   Uint8List? _imageBytes;
@@ -76,6 +78,9 @@ class _SubmitAnswerScreenState extends State<SubmitAnswerScreen> {
   void initState() {
     super.initState();
     _activity = loadSubmitActivity(widget.db, widget.activityId);
+    _clock = Timer.periodic(const Duration(seconds: 30), (Timer _) {
+      if (mounted) setState(() {});
+    });
     if (widget.onBehalf) _users = AdminApi().listUsers();
   }
 
@@ -89,6 +94,7 @@ class _SubmitAnswerScreenState extends State<SubmitAnswerScreen> {
 
   @override
   void dispose() {
+    _clock?.cancel();
     _text.dispose();
     super.dispose();
   }
@@ -334,6 +340,13 @@ class _SubmitAnswerScreenState extends State<SubmitAnswerScreen> {
               description: widget.onBehalf
                   ? 'Set the location solution in the activity editor first.'
                   : null,
+            );
+          }
+          if (!widget.onBehalf &&
+              !AuthScope.of(context).isSubsectionAdmin &&
+              !activity.gameWindowIsOpenAt(DateTime.now().toUtc())) {
+            return const EmptyState(
+              title: 'Activities are not available right now.',
             );
           }
           return _content(activity);

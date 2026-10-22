@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:powersync/powersync.dart' show PowerSyncDatabase, SyncStatus;
 
+import '../auth/auth_state.dart';
 import '../auth/auth_scope.dart';
 import '../data/activity_list.dart';
 import '../layout/app_scaffold.dart';
@@ -63,7 +64,10 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final bool isAdmin = AuthScope.of(context).isAdmin;
+    final AuthState auth = AuthScope.of(context);
+    final bool isAdmin = auth.isAdmin;
+    final bool canViewOutsideGameWindow =
+        isAdmin || auth.isSubsectionAdmin;
     return AppScaffold(
       title: 'Activities',
       floatingActionButton: isAdmin
@@ -85,7 +89,11 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
           if (!snap.hasData) return const LoadingSpinner();
           final List<ActivityListItem> items = snap.requireData;
           if (items.isEmpty) return _EmptyState(db: widget.db, isAdmin: isAdmin);
-          return _ActivityList(items: items, isAdmin: isAdmin);
+          return _ActivityList(
+            items: items,
+            isAdmin: isAdmin,
+            canViewOutsideGameWindow: canViewOutsideGameWindow,
+          );
         },
       ),
     );
@@ -117,19 +125,33 @@ class _EmptyState extends StatelessWidget {
 }
 
 class _ActivityList extends StatelessWidget {
-  const _ActivityList({required this.items, required this.isAdmin});
+  const _ActivityList({
+    required this.items,
+    required this.isAdmin,
+    required this.canViewOutsideGameWindow,
+  });
 
   final List<ActivityListItem> items;
   final bool isAdmin;
+  final bool canViewOutsideGameWindow;
 
   @override
   Widget build(BuildContext context) {
     final DateTime now = DateTime.now().toUtc();
+    final List<ActivityListItem> visibleItems = canViewOutsideGameWindow
+        ? items
+        : <ActivityListItem>[
+            for (final ActivityListItem item in items)
+              if (item.gameWindowIsOpenAt(now)) item,
+          ];
+    if (visibleItems.isEmpty) {
+      return const EmptyState(title: 'No activities are available right now.');
+    }
     final bool showHeaders =
-        items.any((ActivityListItem i) => i.subsectionName != null);
+        visibleItems.any((ActivityListItem i) => i.subsectionName != null);
     final List<Widget> children = <Widget>[];
     String? section;
-    for (final ActivityListItem item in items) {
+    for (final ActivityListItem item in visibleItems) {
       final String itemSection = item.subsectionName ?? 'General';
       if (showHeaders && itemSection != section) {
         section = itemSection;

@@ -171,3 +171,30 @@ Object? _decodeOptions(Object? rawOptions) {
   }
   return rawOptions;
 }
+
+/// Reads a timestamp option as UTC.
+///
+/// [rawOptions] may be decoded options or their JSON text. [key] is the
+/// timestamp option to read. Returns null when it is absent or invalid.
+/// Does not throw.
+DateTime? gameOptionDateTime(Object? rawOptions, String key) {
+  final Object? decoded = _decodeOptions(rawOptions);
+  if (decoded is! Map) return null;
+  final Object? value = decoded[key];
+  if (value is! String) return null;
+  return DateTime.tryParse(value)?.toUtc();
+}
+
+/// Returns whether [now] is inside the optional game schedule window.
+///
+/// [now] is the time to check. [startsAt] and [endsAt] are inclusive bounds.
+/// Returns true when either bound is unset. Does not throw.
+bool isGameWindowOpenAt({
+  required DateTime now,
+  DateTime? startsAt,
+  DateTime? endsAt,
+}) {
+  final DateTime utcNow = now.toUtc();
+  return (startsAt == null || !startsAt.isAfter(utcNow)) &&
+      (endsAt == null || !endsAt.isBefore(utcNow));
+}

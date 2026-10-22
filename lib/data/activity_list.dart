@@ -6,6 +6,8 @@ import 'game_options.dart'
     show
         adminOnlySubmissionSubsections,
         allowResubmissionOptionKey,
+        gameOptionDateTime,
+        isGameWindowOpenAt,
         gameOptionBool;
 
 /// One row of the activity list, with the caller's own submission state.
@@ -16,6 +18,8 @@ class ActivityListItem {
     required this.points,
     required this.subsectionName,
     required this.releaseAt,
+    required this.gameStartsAt,
+    required this.gameEndsAt,
     required this.canResubmit,
     required this.adminOnlySubmission,
     required this.answerCount,
@@ -31,6 +35,8 @@ class ActivityListItem {
 
   /// Game start plus the activity's offset, or null when it has no gate.
   final DateTime? releaseAt;
+  final DateTime? gameStartsAt;
+  final DateTime? gameEndsAt;
   final bool canResubmit;
   final bool adminOnlySubmission;
   final int answerCount;
@@ -50,6 +56,16 @@ class ActivityListItem {
     if (at == null || !at.isAfter(now)) return null;
     return at;
   }
+
+  /// Checks whether this activity is inside its game's schedule window.
+  ///
+  /// [now] is the current time. Returns false outside the window; does not
+  /// throw.
+  bool gameWindowIsOpenAt(DateTime now) => isGameWindowOpenAt(
+        now: now,
+        startsAt: gameStartsAt,
+        endsAt: gameEndsAt,
+      );
 }
 
 // Ordered by subsection, then activity. Activities without a subsection
@@ -112,6 +128,8 @@ Stream<List<ActivityListItem>> watchActivities(
               row['starts_at'] as String?,
               (row['offset_minutes'] as int?) ?? 0,
             ),
+            gameStartsAt: gameOptionDateTime(row['game_options'], 'starts_at'),
+            gameEndsAt: gameOptionDateTime(row['game_options'], 'ends_at'),
             canResubmit: row['can_resubmit'] == 1 &&
                 gameOptionBool(
                   row['game_options'],
