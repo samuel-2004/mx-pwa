@@ -941,8 +941,8 @@ class _BulkFormState extends State<_BulkForm> {
               Padding(
                 padding: const EdgeInsets.only(top: 4),
                 child: Text(
-                  'Set the location itself on each activity afterwards. Until '
-                  'then, players are not asked for it.',
+                  'Players will be asked for a location even before a solution '
+                  'is set. Without a solution, answers need manual grading.',
                   style: context.typography.bodySmall.muted(context),
                 ),
               ),

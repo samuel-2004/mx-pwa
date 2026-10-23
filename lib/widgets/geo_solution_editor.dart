@@ -45,6 +45,7 @@ class _GeoSolutionEditorState extends State<GeoSolutionEditor> {
       TextEditingController(text: _text(widget.initial?.maxDistanceM));
   late GeoSolution? _solution = widget.initial;
   String? _error;
+  String? _locationError;
   bool _locating = false;
 
   static String _text(double? value) {
@@ -87,6 +88,7 @@ class _GeoSolutionEditorState extends State<GeoSolutionEditor> {
     setState(() {
       _solution = solution;
       _error = error;
+      _locationError = null;
     });
     widget.onChanged(solution, error);
   }
@@ -102,6 +104,7 @@ class _GeoSolutionEditorState extends State<GeoSolutionEditor> {
     setState(() {
       _locating = true;
       _error = null;
+      _locationError = null;
     });
     try {
       final GeoPoint here = await getDeviceLocation();
@@ -109,7 +112,7 @@ class _GeoSolutionEditorState extends State<GeoSolutionEditor> {
       _pick(LatLng(here.lat, here.lng));
     } on LocationUnavailableException catch (e) {
       if (!mounted) return;
-      setState(() => _error = e.message);
+      setState(() => _locationError = e.message);
     }
     if (!mounted) return;
     setState(() => _locating = false);
@@ -161,7 +164,8 @@ class _GeoSolutionEditorState extends State<GeoSolutionEditor> {
           controller: _max,
           decoration: const InputDecoration(
             labelText: 'Maximum distance (metres)',
-            helperText: 'Optional. A location-only activity with points set is '
+            helperText: 'Optional. A location-only activity with a solution '
+                'and points set is '
                 'graded automatically: full points within this distance, '
                 'otherwise 0.',
             helperMaxLines: 3,
@@ -174,15 +178,25 @@ class _GeoSolutionEditorState extends State<GeoSolutionEditor> {
         ),
         if (_error != null)
           InfoBanner(title: _error!, variant: InfoBannerVariant.error),
-        Align(
-          alignment: Alignment.centerLeft,
-          child: Button.small(
-            label: 'Use my location',
-            icon: const Icon(Icons.my_location),
-            variant: ButtonVariant.outline,
-            loading: _locating,
-            onPressed: _useDevice,
-          ),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          spacing: 8,
+          children: <Widget>[
+            Button.small(
+              label: 'Use my location',
+              icon: const Icon(Icons.my_location),
+              variant: ButtonVariant.outline,
+              loading: _locating,
+              onPressed: _useDevice,
+            ),
+            if (_locationError != null)
+              Expanded(
+                child: InfoBanner(
+                  title: _locationError!,
+                  variant: InfoBannerVariant.error,
+                ),
+              ),
+          ],
         ),
         GeoMap(
           markers: <GeoMapMarker>[

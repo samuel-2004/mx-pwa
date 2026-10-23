@@ -107,8 +107,7 @@ ORDER BY COALESCE(s.subsection_order, 2147483647), a.activity_order, a.name
 /// [db] the PowerSync database. [userId] whose submissions to attach.
 /// Returns a stream that emits again whenever the underlying tables change.
 /// The userId is bound as a query parameter. An unparseable start time is
-/// treated as no release gate. Activities with nothing to answer yet, such as
-/// a location-only one whose solution is not set, are left out.
+/// treated as no release gate. Activities with no answer types are left out.
 Stream<List<ActivityListItem>> watchActivities(
   PowerSyncDatabase db,
   String userId,

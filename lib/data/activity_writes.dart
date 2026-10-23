@@ -113,19 +113,16 @@ class AnswerSchema {
   /// Whether the activity asks for [type].
   bool has(AnswerType type) => types.contains(type);
 
-  /// Whether players are asked for a location: it is requested and a
-  /// solution exists.
-  bool get asksLocation => has(AnswerType.geo) && geo.ready;
+  /// Whether players are asked for a location, even when no solution exists.
+  bool get asksLocation => has(AnswerType.geo);
 
-  /// The types players are asked for. A location is left out until its
-  /// solution is set.
+  /// The types players are asked for, in form order.
   List<AnswerType> get playerTypes => <AnswerType>[
         for (final AnswerType type in types)
-          if (type != AnswerType.geo || geo.ready) type,
+          type,
       ];
 
-  /// Whether players have anything to answer. False for a location-only
-  /// activity that has no solution yet.
+  /// Whether players have at least one answer to provide.
   bool get isAnswerable => playerTypes.isNotEmpty;
 
   /// Reads a stored schema.

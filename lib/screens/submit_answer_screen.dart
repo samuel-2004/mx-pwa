@@ -367,7 +367,8 @@ class _SubmitAnswerScreenState extends State<SubmitAnswerScreen> {
             return EmptyState(
               title: 'Not open yet.',
               description: widget.onBehalf
-                  ? 'Set the location solution in the activity editor first.'
+                  ? 'Choose at least one answer type in the activity editor '
+                      'first.'
                   : null,
             );
           }

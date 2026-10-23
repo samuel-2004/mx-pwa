@@ -137,17 +137,11 @@ class _ActivityCardState extends State<ActivityCard> {
     _solutionLoaded = false;
   }
 
-  // Why a location cannot be saved yet, or null. A location-only activity
-  // needs a solution; alongside other types it may wait, and players simply
-  // are not asked for the location until it is set.
+  // Why a location configuration cannot be saved yet, or null.
   String? _geoError() {
     if (_solutionLoadError != null) return _solutionLoadError;
     if (!_solutionLoaded) return 'Wait for the solution to load.';
     if (_solutionInputError != null) return _solutionInputError;
-    if (_types.length == 1 && _solution == null) {
-      return 'Set the solution location before saving. A location-only '
-          'activity needs one.';
-    }
     if (_geoMode == GeoMode.photo && !_types.contains(AnswerType.image)) {
       return 'From photo needs the Image answer type as well.';
     }
@@ -219,7 +213,7 @@ class _ActivityCardState extends State<ActivityCard> {
       if (a.releaseOffsetMinutes > 0) 'opens +${a.releaseOffsetMinutes} min',
       if (!(widget.allowResubmission && a.canResubmit)) 'one attempt',
       if (a.schema.has(AnswerType.geo) && !a.schema.geo.ready)
-        'location: no solution set',
+        'location: no solution (manual grading)',
     ].join(' · ');
   }
 
@@ -325,7 +319,6 @@ class _ActivityCardState extends State<ActivityCard> {
 
   Widget _geoSection() {
     final TextTheme text = Theme.of(context).textTheme;
-    final bool geoOnly = _types.length == 1;
     final String? loadError = _solutionLoadError;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -356,9 +349,9 @@ class _ActivityCardState extends State<ActivityCard> {
           if (_solution == null && _solutionInputError == null)
             InfoBanner(
               title: 'No solution set',
-              description: geoOnly
-                  ? 'Set the location to save this activity.'
-                  : 'Players are not asked for a location until you set one.',
+              description: 'Players will still be asked for a location. Set a '
+                  'solution so graders can compare their answers with the '
+                  'target.',
               variant: InfoBannerVariant.warning,
             ),
           GeoSolutionEditor(
