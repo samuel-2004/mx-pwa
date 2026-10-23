@@ -9,6 +9,7 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:powersync/powersync.dart' show PowerSyncDatabase;
 import 'package:file_saver/file_saver.dart';
 
+import 'activity_writes.dart' show AnswerType;
 import 'export_data.dart';
 
 const double _pageMargin = 32;
@@ -191,6 +192,9 @@ class ExportActivity {
             'subsection': subsection.name,
             'activity': activity.name,
             'description': activity.description,
+            'types': <String>[
+              for (final AnswerType type in activity.types) type.wireName,
+            ],
             'points': activity.points,
           },
     ]);

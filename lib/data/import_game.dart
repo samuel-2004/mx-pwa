@@ -13,6 +13,7 @@ const int _maxActivities = 1000;
 const int _maxNameLength = 200;
 // Mirrors the limit in the activity manager screen.
 const int _maxPoints = 1000000;
+const int _maxLegacyPointsLength = 80;
 const List<String> _csvHeader = <String>[
   'subsection',
   'activity',
@@ -117,6 +118,7 @@ class _Collector {
     required String name,
     required String description,
     required String points,
+    AnswerSchema schema = AnswerSchema.shortAnswer,
   }) {
     final _Pending pending = subsection(subsectionName);
     final String activityName = _clean(name);
@@ -126,15 +128,20 @@ class _Collector {
       throw ImportFormatException('Activity "$activityName": $nameError');
     }
     final String pointsText = _clean(points);
-    final int? parsedPoints = int.tryParse(pointsText);
-    final String? pointsError =
-        validateOptionalCount(pointsText, max: _maxPoints);
-    if (pointsError != null ||
-        (pointsText.isNotEmpty && parsedPoints == null)) {
+    final int? parsedPoints = _parseImportPoints(pointsText);
+    if (parsedPoints == null &&
+        pointsText.isNotEmpty &&
+        pointsText.length > _maxLegacyPointsLength) {
       throw ImportFormatException(
-        'Activity "$activityName": points must be a whole number '
-        'up to $_maxPoints.',
+        'Activity "$activityName": points notation is too long.',
       );
+    }
+    // Text-based paper scoring rules such as multipliers cannot fit the
+    // numeric points field, so keep their notation with the instructions.
+    String descriptionWithPoints = _clean(description);
+    if (parsedPoints == null && pointsText.isNotEmpty) {
+      descriptionWithPoints =
+          _appendLegacyPoints(descriptionWithPoints, pointsText);
     }
     _activityCount++;
     if (_activityCount > _maxActivities) {
@@ -144,8 +151,8 @@ class _Collector {
     // the defaults of "Add activity".
     pending.drafts.add((
       name: activityName,
-      description: _clean(description),
-      schema: AnswerSchema.shortAnswer,
+      description: descriptionWithPoints,
+      schema: schema,
       points: parsedPoints,
       releaseOffsetMinutes: 0,
       canResubmit: true,
@@ -165,6 +172,25 @@ class _Collector {
         ),
     ];
   }
+}
+
+int? _parseImportPoints(String pointsText) {
+  final bool isSignedInteger = RegExp(r'^-?\d+$').hasMatch(pointsText);
+  final bool isGroupedInteger =
+      RegExp(r'^-?\d{1,3}(,\d{3})+$').hasMatch(pointsText);
+  if (!isSignedInteger && !isGroupedInteger) return null;
+
+  final int? points = int.tryParse(pointsText.replaceAll(',', ''));
+  if (points == null || points < -_maxPoints || points > _maxPoints) {
+    return null;
+  }
+  return points;
+}
+
+String _appendLegacyPoints(String description, String pointsText) {
+  final String note = 'Paper points: $pointsText';
+  if (description.isEmpty) return note;
+  return '$description\n\n$note';
 }
 
 void _parseFile(String fileName, Uint8List bytes, _Collector collector) {
@@ -331,9 +357,30 @@ void _readJson(String text, _Collector collector) {
       name: activity,
       description: _jsonText(item['description'], 'description'),
       points: _jsonText(item['points'], 'points'),
+      schema: _jsonAnswerSchema(item['types']),
     );
   }
   if (kDebugMode) debugPrint('[import] JSON read: $activities activities, $subsectionOnly subsection-only');
+}
+
+AnswerSchema _jsonAnswerSchema(Object? rawTypes) {
+  if (rawTypes == null) return AnswerSchema.shortAnswer;
+  if (rawTypes is! List) {
+    throw const ImportFormatException('"types" must be a list of strings.');
+  }
+
+  final List<AnswerType> types = <AnswerType>[];
+  for (final Object? rawType in rawTypes) {
+    if (rawType is! String) {
+      throw const ImportFormatException('"types" must be a list of strings.');
+    }
+    final AnswerType? type = AnswerType.fromWireName(rawType);
+    if (type == null) {
+      throw ImportFormatException('Unknown activity type "$rawType".');
+    }
+    types.add(type);
+  }
+  return AnswerSchema.fromTypes(types);
 }
 
 String _jsonText(Object? value, String field) {

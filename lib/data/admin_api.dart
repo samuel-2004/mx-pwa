@@ -60,7 +60,7 @@ class AdminApiException implements Exception {
         'not_found' => 'That item no longer exists.',
         'superseded' =>
           'The player submitted again. Refresh to see the newer answer.',
-        'points_too_high' => 'That is more than the activity is worth.',
+        'points_too_high' => 'That score is outside the activity\'s point range.',
         'return_type_invalid' => 'The server returned an unexpected type.',
         'game_not_found' => 'No game exists with that game code.',
         _ => 'Something went wrong. Try again. Error: $code',

@@ -3,11 +3,14 @@ import 'dart:convert';
 import 'package:dart_quill_delta/dart_quill_delta.dart' show Delta;
 import 'package:powersync/powersync.dart' show PowerSyncDatabase;
 
+import 'activity_writes.dart' show AnswerSchema, AnswerType;
+
 /// An activity as printed in an export.
 class ExportActivityItem {
   const ExportActivityItem({
     required this.name,
     required this.description,
+    required this.types,
     required this.points,
   });
 
@@ -15,6 +18,7 @@ class ExportActivityItem {
 
   /// Plain text. Empty when there is none.
   final String description;
+  final List<AnswerType> types;
   final int? points;
 }
 
@@ -158,7 +162,7 @@ Future<ExportData?> loadExportData(PowerSyncDatabase db) async {
     'WHERE deleted_at IS NULL ORDER BY subsection_order, name',
   );
   final activities = await db.getAll(
-    'SELECT subsection_id, name, "desc" AS description, points '
+    'SELECT subsection_id, name, "desc" AS description, answer_schema, points '
     'FROM activities WHERE deleted_at IS NULL AND subsection_id IS NOT NULL '
     'ORDER BY activity_order, name',
   );
@@ -167,10 +171,13 @@ Future<ExportData?> loadExportData(PowerSyncDatabase db) async {
       <String, List<ExportActivityItem>>{};
   for (final row in activities) {
     final String id = row['subsection_id'] as String;
+    final AnswerSchema schema =
+        AnswerSchema.parse(row['answer_schema'] as String?);
     (bySubsection[id] ??= <ExportActivityItem>[]).add(
       ExportActivityItem(
         name: (row['name'] as String?) ?? '',
         description: ((row['description'] as String?) ?? '').trim(),
+        types: schema.types,
         points: row['points'] as int?,
       ),
     );

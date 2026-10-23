@@ -108,6 +108,23 @@ String? validateOptionalCount(String? value, {required int max}) {
   return null;
 }
 
+/// Form validator for an optional signed whole number within [maxMagnitude].
+///
+/// [value] is the raw field text. [maxMagnitude] is the absolute limit.
+/// Returns an error message, or null when valid. Does not throw.
+String? validateOptionalSignedCount(
+  String? value, {
+  required int maxMagnitude,
+}) {
+  final String text = (value ?? '').trim();
+  if (text.isEmpty) return null;
+  final int? number = int.tryParse(text);
+  if (number == null || number < -maxMagnitude || number > maxMagnitude) {
+    return 'Enter a whole number from -$maxMagnitude to $maxMagnitude.';
+  }
+  return null;
+}
+
 /// Form validator for activity descriptions, which are optional.
 ///
 /// [value] the raw field text. Returns an error message, or null when valid.

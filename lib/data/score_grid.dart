@@ -14,7 +14,7 @@ class GridActivity {
   final String id;
   final String name;
 
-  /// The most the activity is worth, or null if it has no limit.
+  /// The score limit: positive for a reward, negative for a penalty.
   final int? points;
   final String? subsectionName;
 }
@@ -139,7 +139,7 @@ class ScoreGridException implements Exception {
   /// A message that is safe to show to the user.
   String get message => switch (code) {
         '42501' => 'Only game admins can enter scores in bulk.',
-        '22023' => 'A score is above what its activity is worth.',
+        '22023' => 'A score is outside its activity\'s point range.',
         'P0002' => 'An activity or team no longer exists. Reload the page.',
         _ => 'Something went wrong. Try again. Error code: $code',
       };

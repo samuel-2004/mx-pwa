@@ -18,6 +18,7 @@ import 'auto_save_field.dart';
 import 'geo_solution_editor.dart';
 import 'loading_spinner.dart';
 import 'options_editor.dart';
+import 'signed_integer_input_formatter.dart';
 
 const int _maxPoints = 1000000;
 const int _maxOffsetMinutes = 525600;
@@ -240,7 +241,13 @@ class _ActivityCardState extends State<ActivityCard> {
                   padding: const EdgeInsets.only(top: 6),
                   child: CircleAvatar(
                     radius: 14,
-                    child: Text('${widget.number}', style: text.labelLarge),
+                    backgroundColor: Theme.of(context).colorScheme.primary,
+                    child: Text(
+                      '${widget.number}',
+                      style: text.labelLarge?.copyWith(
+                        color: Theme.of(context).colorScheme.onPrimary,
+                      ),
+                    ),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -260,12 +267,16 @@ class _ActivityCardState extends State<ActivityCard> {
                   child: AutoSaveField(
                     label: 'Points',
                     value: a.points?.toString() ?? '',
-                    keyboardType: TextInputType.number,
+                    keyboardType: const TextInputType.numberWithOptions(
+                      signed: true,
+                    ),
                     inputFormatters: <TextInputFormatter>[
-                      FilteringTextInputFormatter.digitsOnly,
+                      const SignedIntegerInputFormatter(),
                     ],
-                    validator: (String v) =>
-                        validateOptionalCount(v, max: _maxPoints),
+                    validator: (String v) => validateOptionalSignedCount(
+                      v,
+                      maxMagnitude: _maxPoints,
+                    ),
                     onSave: (String v) async {
                       await widget.run(
                         () => setActivityPoints(

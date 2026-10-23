@@ -25,7 +25,7 @@ class GradingItem {
   /// Empty when there is none.
   final String activityDescription;
 
-  /// The most the activity is worth, or null if it has no points set.
+  /// The score limit: positive for a reward, negative for a penalty.
   final int? maxPoints;
   final String? subsectionName;
   final String username;
@@ -67,7 +67,7 @@ class GradingException implements Exception {
   /// A message that is safe to show to the user.
   String get message => switch (code) {
         '42501' => 'You cannot grade that answer.',
-        '22023' => 'Points must be between 0 and the maximum.',
+        '22023' => 'Points are outside the activity\'s point range.',
         '23514' => 'That answer was replaced by a newer one. Refresh the list.',
         'P0002' => 'That answer no longer exists.',
         _ => 'Something went wrong. Try again.',

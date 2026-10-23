@@ -2,7 +2,7 @@ import 'dart:typed_data';
 
 import 'package:flutter/foundation.dart' show debugPrint, kDebugMode;
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart' show FilteringTextInputFormatter, TextInputFormatter;
+import 'package:flutter/services.dart' show TextInputFormatter;
 import 'package:latlong2/latlong.dart' show LatLng;
 import 'package:go_router/go_router.dart';
 
@@ -24,6 +24,7 @@ import '../orient_ui/toast.dart';
 import '../orient_ui/toggle_tile.dart';
 import '../widgets/geo_map.dart';
 import '../widgets/loading_spinner.dart';
+import '../widgets/signed_integer_input_formatter.dart';
 import '../widgets/surface_card.dart';
 import '../auth/auth_scope.dart';
 import '../router/routes.dart';
@@ -340,10 +341,18 @@ class _GradeCardState extends State<_GradeCard> {
 
   Future<void> _save() async {
     if (_busy) return;
-    final int limit = widget.item.maxPoints ?? _maxPoints;
+    final int? limit = widget.item.maxPoints;
+    final int minimum = limit == null
+        ? -_maxPoints
+        : (limit < 0 ? limit : 0);
+    final int maximum = limit == null
+        ? _maxPoints
+        : (limit > 0 ? limit : 0);
     final int? value = int.tryParse(_points.text.trim());
-    if (value == null || value < 0 || value > limit) {
-      setState(() => _error = 'Enter a whole number from 0 to $limit.');
+    if (value == null || value < minimum || value > maximum) {
+      setState(() {
+        _error = 'Enter a whole number from $minimum to $maximum.';
+      });
       return;
     }
     setState(() {
@@ -423,20 +432,24 @@ class _GradeCardState extends State<_GradeCard> {
                     controller: _points,
                     decoration: InputDecoration(
                       labelText: 'Points',
-                      suffixText: max == null ? null : '/ $max',
+                      suffixText: max == null
+                          ? null
+                          : (max < 0 ? 'min $max' : '/ $max'),
                       isDense: true,
                       border: const OutlineInputBorder(),
                     ),
-                    keyboardType: TextInputType.number,
-                    inputFormatters: <TextInputFormatter>[
-                      FilteringTextInputFormatter.digitsOnly,
+                    keyboardType: const TextInputType.numberWithOptions(
+                      signed: true,
+                    ),
+                    inputFormatters: const <TextInputFormatter>[
+                      SignedIntegerInputFormatter(),
                     ],
                     onSubmitted: (String _) => _save(),
                   ),
                 ),
                 if (max != null)
                   Button.small(
-                    label: 'Full marks ($max)',
+                    label: max < 0 ? 'Full penalty ($max)' : 'Full marks ($max)',
                     variant: ButtonVariant.outline,
                     onPressed: () => _points.text = '$max',
                   ),

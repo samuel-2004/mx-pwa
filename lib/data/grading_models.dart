@@ -53,7 +53,7 @@ class GradingItem {
   final String activityName;
   final String activityDescription;
 
-  /// The most the activity is worth, or null if it has no limit.
+  /// The score limit: positive for a reward, negative for a penalty.
   final int? maxPoints;
   final String? subsectionName;
   final String username;

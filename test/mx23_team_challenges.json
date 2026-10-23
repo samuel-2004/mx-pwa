@@ -1,0 +1,1102 @@
+[
+  {
+    "subsection": "Team Challenges",
+    "activity": "1. Match 3",
+    "description": "Find another car that has the same 3 letters in its rego",
+    "points": "300",
+    "types": [
+      "short_answer",
+      "image",
+      "geo"
+    ]
+  },
+  {
+    "subsection": "Team Challenges",
+    "activity": "2. Blood Drive",
+    "description": "Have a member of your team donate blood",
+    "points": "200",
+    "types": [
+      "short_answer",
+      "image",
+      "geo"
+    ]
+  },
+  {
+    "subsection": "Team Challenges",
+    "activity": "3. Feeling Fabulous",
+    "description": "Have a team member get a manicure (bonus if it's at the Esperance Nails & Spa Salon)",
+    "points": "200 + 100 for each additional member",
+    "types": [
+      "short_answer",
+      "image",
+      "geo"
+    ]
+  },
+  {
+    "subsection": "Team Challenges",
+    "activity": "4. Dressed Up",
+    "description": "Dress Eliza, the lady in the river",
+    "points": "700",
+    "types": [
+      "short_answer",
+      "image",
+      "geo"
+    ]
+  },
+  {
+    "subsection": "Team Challenges",
+    "activity": "5. Pitch a tent #1",
+    "description": "Pitch a tent outside the Chief Commissioner's house",
+    "points": "200",
+    "types": [
+      "short_answer",
+      "image",
+      "geo"
+    ]
+  },
+  {
+    "subsection": "Team Challenges",
+    "activity": "6. Longest Road",
+    "description": "Drive the furthest away from the starting point",
+    "points": "1000",
+    "types": [
+      "short_answer",
+      "image",
+      "geo"
+    ]
+  },
+  {
+    "subsection": "Team Challenges",
+    "activity": "7. Scout Nerds",
+    "description": "Visit as many scout halls as you can",
+    "points": "25",
+    "types": [
+      "short_answer",
+      "image",
+      "geo"
+    ]
+  },
+  {
+    "subsection": "Team Challenges",
+    "activity": "8. Spy Kids",
+    "description": "Find the secret message and get to a payphone to message the intel in",
+    "points": "600",
+    "types": [
+      "short_answer",
+      "image",
+      "geo"
+    ]
+  },
+  {
+    "subsection": "Team Challenges",
+    "activity": "9. Chief Commissioner",
+    "description": "Get a photo with the Chief Commissioner",
+    "points": "301",
+    "types": [
+      "short_answer",
+      "image",
+      "geo"
+    ]
+  },
+  {
+    "subsection": "Team Challenges",
+    "activity": "10. Not a world record",
+    "description": "Play a board game at the top of a mountain (or a hill)",
+    "points": "200",
+    "types": [
+      "short_answer",
+      "image",
+      "geo"
+    ]
+  },
+  {
+    "subsection": "Team Challenges",
+    "activity": "11. IRL GeoGuessr",
+    "description": "Play a game of Perth GeoGuessr and go to all 5 locations. Make sure to save the link so we can see which locations you got.",
+    "points": "600",
+    "types": [
+      "short_answer",
+      "image",
+      "geo"
+    ]
+  },
+  {
+    "subsection": "Team Challenges",
+    "activity": "12. Walkies",
+    "description": "Complete a hike from alltrails.com",
+    "points": "100",
+    "types": [
+      "short_answer",
+      "image",
+      "geo"
+    ]
+  },
+  {
+    "subsection": "Team Challenges",
+    "activity": "13. Scouts has the best merch…",
+    "description": "Find a scouts bumper sticker (on a car in the wild)",
+    "points": "200",
+    "types": [
+      "short_answer",
+      "image",
+      "geo"
+    ]
+  },
+  {
+    "subsection": "Team Challenges",
+    "activity": "14. Hot Potato",
+    "description": "Don't get caught at the end of the event with the potato",
+    "points": "-500",
+    "types": [
+      "short_answer",
+      "image",
+      "geo"
+    ]
+  },
+  {
+    "subsection": "Team Challenges",
+    "activity": "15. End of the Line",
+    "description": "Get a team photo on the platform that is at the end of each train line",
+    "points": "100",
+    "types": [
+      "short_answer",
+      "image",
+      "geo"
+    ]
+  },
+  {
+    "subsection": "Team Challenges",
+    "activity": "16. Tag",
+    "description": "Get a photo of another team (They need to be identifiable. It can't be at a checkpoint or at the start/end of the event)",
+    "points": "800",
+    "types": [
+      "short_answer",
+      "image",
+      "geo"
+    ]
+  },
+  {
+    "subsection": "Team Challenges",
+    "activity": "17. You're it",
+    "description": "Get caught by another team",
+    "points": "-1000",
+    "types": [
+      "short_answer",
+      "image",
+      "geo"
+    ]
+  },
+  {
+    "subsection": "Team Challenges",
+    "activity": "18. Taking Flight",
+    "description": "Get a team photo with a plane taking off in the background",
+    "points": "150",
+    "types": [
+      "short_answer",
+      "image",
+      "geo"
+    ]
+  },
+  {
+    "subsection": "Team Challenges",
+    "activity": "19. Team Street",
+    "description": "Get a photo of a street sign with a team member's first or last name",
+    "points": "150 + 50 for every additional",
+    "types": [
+      "short_answer",
+      "image",
+      "geo"
+    ]
+  },
+  {
+    "subsection": "Team Challenges",
+    "activity": "20. Kangaroos #1",
+    "description": "Visit the kangaroo statues on St Georges Terrace",
+    "points": "100",
+    "types": [
+      "short_answer",
+      "image",
+      "geo"
+    ]
+  },
+  {
+    "subsection": "Team Challenges",
+    "activity": "21. SES",
+    "description": "Get started on your way to earning your SES badge by volunteering in any way you can",
+    "points": "300",
+    "types": [
+      "short_answer",
+      "image",
+      "geo"
+    ]
+  },
+  {
+    "subsection": "Team Challenges",
+    "activity": "22. Pitch a tent #2",
+    "description": "Pitch a tent in a playground",
+    "points": "200",
+    "types": [
+      "short_answer",
+      "image",
+      "geo"
+    ]
+  },
+  {
+    "subsection": "Team Challenges",
+    "activity": "23. DIY Bowling",
+    "description": "Go 10-pin bowling using bottles and cans",
+    "points": "150",
+    "types": [
+      "short_answer",
+      "image",
+      "geo"
+    ]
+  },
+  {
+    "subsection": "Team Challenges",
+    "activity": "24. Not a Cult",
+    "description": "Reaffirm your promise in the middle of a crowd",
+    "points": "300",
+    "types": [
+      "short_answer",
+      "image",
+      "geo"
+    ]
+  },
+  {
+    "subsection": "Team Challenges",
+    "activity": "25. Wail Tail",
+    "description": "Go wailing in front of the giant tail",
+    "points": "600",
+    "types": [
+      "short_answer",
+      "image",
+      "geo"
+    ]
+  },
+  {
+    "subsection": "Team Challenges",
+    "activity": "26. Piano Man",
+    "description": "Find a community piano and play the iconic tune",
+    "points": "200",
+    "types": [
+      "short_answer",
+      "image",
+      "geo"
+    ]
+  },
+  {
+    "subsection": "Team Challenges",
+    "activity": "27. Thonk",
+    "description": "Play a game of pool",
+    "points": "100",
+    "types": [
+      "short_answer",
+      "image",
+      "geo"
+    ]
+  },
+  {
+    "subsection": "Team Challenges",
+    "activity": "28. All Aboard!",
+    "description": "It's not a Midnight Express without a train, get a team photo with a steam engine train",
+    "points": "200",
+    "types": [
+      "short_answer",
+      "image",
+      "geo"
+    ]
+  },
+  {
+    "subsection": "Team Challenges",
+    "activity": "29. Neigh!",
+    "description": "It's actually not a Midnight Express! Take a picture with a horse (bonus if a team member is riding the horse)",
+    "points": "300",
+    "types": [
+      "short_answer",
+      "image",
+      "geo"
+    ]
+  },
+  {
+    "subsection": "Team Challenges",
+    "activity": "30. Fallout: Perth",
+    "description": "Build a survival shelter out of tarp, staves and rope in the middle of a park",
+    "points": "300",
+    "types": [
+      "short_answer",
+      "image",
+      "geo"
+    ]
+  },
+  {
+    "subsection": "Team Challenges",
+    "activity": "31. A-bench-ure Time",
+    "description": "Get photos of your team sitting on 10 different park benches completion",
+    "points": "10 each + 200 upon",
+    "types": [
+      "short_answer",
+      "image",
+      "geo"
+    ]
+  },
+  {
+    "subsection": "Team Challenges",
+    "activity": "32. Twists and Turns",
+    "description": "Make a tongue twister, like the many twists and turns you'll take on your journey today.",
+    "points": "100 multiplied by the number of times it takes me to say it minus one",
+    "types": [
+      "short_answer",
+      "image",
+      "geo"
+    ]
+  },
+  {
+    "subsection": "Team Challenges",
+    "activity": "33. Where's Wally?",
+    "description": "Find Wally and take a photo",
+    "points": "500",
+    "types": [
+      "short_answer",
+      "image",
+      "geo"
+    ]
+  },
+  {
+    "subsection": "Team Challenges",
+    "activity": "34. Spin me right round",
+    "description": "Take a 360-degree photo at the Esperance Rotary Lookout",
+    "points": "600",
+    "types": [
+      "short_answer",
+      "image",
+      "geo"
+    ]
+  },
+  {
+    "subsection": "Team Challenges",
+    "activity": "35. Amazing Race",
+    "description": "Solve an in-person maze (e.g. Yallingup)",
+    "points": "200",
+    "types": [
+      "short_answer",
+      "image",
+      "geo"
+    ]
+  },
+  {
+    "subsection": "Team Challenges",
+    "activity": "36. Ginormous",
+    "description": "Visit the Giants of Mandurah and get a team photo",
+    "points": "200",
+    "types": [
+      "short_answer",
+      "image",
+      "geo"
+    ]
+  },
+  {
+    "subsection": "Team Challenges",
+    "activity": "37. Paperclip",
+    "description": "Visit the Elizabeth Quay's paper holder",
+    "points": "50",
+    "types": [
+      "short_answer",
+      "image",
+      "geo"
+    ]
+  },
+  {
+    "subsection": "Team Challenges",
+    "activity": "38. Race time",
+    "description": "Have an egg and spoon race with a stranger",
+    "points": "500",
+    "types": [
+      "short_answer",
+      "image",
+      "geo"
+    ]
+  },
+  {
+    "subsection": "Team Challenges",
+    "activity": "39. Entertainment for the Cruel",
+    "description": "Throw a pie at someone else's face",
+    "points": "200",
+    "types": [
+      "short_answer",
+      "image",
+      "geo"
+    ]
+  },
+  {
+    "subsection": "Team Challenges",
+    "activity": "40. Monopoly!",
+    "description": "Visit as many Perth Monopoly board locations as you can",
+    "points": "75",
+    "types": [
+      "short_answer",
+      "image",
+      "geo"
+    ]
+  },
+  {
+    "subsection": "Team Challenges",
+    "activity": "41. Cannon Fodder!",
+    "description": "Er, I mean Cannon Photo. Take a team photo with a cannon (bonus if someone gets into the cannon)",
+    "points": "150",
+    "types": [
+      "short_answer",
+      "image",
+      "geo"
+    ]
+  },
+  {
+    "subsection": "Team Challenges",
+    "activity": "42. Broken?",
+    "description": "Find a McDonalds that serves chocolate ice-cream and get a cone",
+    "points": "100",
+    "types": [
+      "short_answer",
+      "image",
+      "geo"
+    ]
+  },
+  {
+    "subsection": "Team Challenges",
+    "activity": "43. Meow",
+    "description": "Get a photo with a peacock",
+    "points": "50",
+    "types": [
+      "short_answer",
+      "image",
+      "geo"
+    ]
+  },
+  {
+    "subsection": "Team Challenges",
+    "activity": "44. Oldest Public Art in WA",
+    "description": "Visit the oldest public art in WA according to Wikipedia",
+    "points": "150",
+    "types": [
+      "short_answer",
+      "image",
+      "geo"
+    ]
+  },
+  {
+    "subsection": "Team Challenges",
+    "activity": "45. Ring the Bells",
+    "description": "Ring the bells of the Bell Tower",
+    "points": "300",
+    "types": [
+      "short_answer",
+      "image",
+      "geo"
+    ]
+  },
+  {
+    "subsection": "Team Challenges",
+    "activity": "46. Everyone's Favourite Plant",
+    "description": "Visit the Cactus in Perth",
+    "points": "50",
+    "types": [
+      "short_answer",
+      "image",
+      "geo"
+    ]
+  },
+  {
+    "subsection": "Team Challenges",
+    "activity": "47. Adventure World",
+    "description": "Go for a splash at Perth's premier theme park (A splash of a water bottle outside the front gates is fine)",
+    "points": "300",
+    "types": [
+      "short_answer",
+      "image",
+      "geo"
+    ]
+  },
+  {
+    "subsection": "Team Challenges",
+    "activity": "48. Northern Terminus",
+    "description": "Get a team photo at the northern terminus of the Bibbulmun Track",
+    "points": "250",
+    "types": [
+      "short_answer",
+      "image",
+      "geo"
+    ]
+  },
+  {
+    "subsection": "Team Challenges",
+    "activity": "49. That's not Perth!",
+    "description": "Take a photo of your team relaxing at Cable Beach, Broome (No points will be deducted for being late to check-in)",
+    "points": "10,000",
+    "types": [
+      "short_answer",
+      "image",
+      "geo"
+    ]
+  },
+  {
+    "subsection": "Team Challenges",
+    "activity": "50. Scuba",
+    "description": "Put on a snorkel and fins and go for a trip to the beach",
+    "points": "500",
+    "types": [
+      "short_answer",
+      "image",
+      "geo"
+    ]
+  },
+  {
+    "subsection": "Team Challenges",
+    "activity": "51. Trans America Express",
+    "description": "Drive the furthest distance - make sure to get a photo of your odometer at the end of the night",
+    "points": "750",
+    "types": [
+      "short_answer",
+      "image",
+      "geo"
+    ]
+  },
+  {
+    "subsection": "Team Challenges",
+    "activity": "52. Thinking Outside the Cache",
+    "description": "Find a Geocache - don't forget to leave your team name in the log",
+    "points": "75",
+    "types": [
+      "short_answer",
+      "image",
+      "geo"
+    ]
+  },
+  {
+    "subsection": "Team Challenges",
+    "activity": "53. Sammy the Seal",
+    "description": "Visit the iconic friend in Esperance",
+    "points": "600",
+    "types": [
+      "short_answer",
+      "image",
+      "geo"
+    ]
+  },
+  {
+    "subsection": "Team Challenges",
+    "activity": "54. Joker",
+    "description": "Steal another team's playing card",
+    "points": "300",
+    "types": [
+      "short_answer",
+      "image",
+      "geo"
+    ]
+  },
+  {
+    "subsection": "Team Challenges",
+    "activity": "55. Patrick",
+    "description": "Visit Patrick the Pelican on the Mandurah foreshore",
+    "points": "200",
+    "types": [
+      "short_answer",
+      "image",
+      "geo"
+    ]
+  },
+  {
+    "subsection": "Team Challenges",
+    "activity": "56. Mullets",
+    "description": "Take a photo with someone with a mullet at the Mullet Lake Nature Reserve",
+    "points": "600",
+    "types": [
+      "short_answer",
+      "image",
+      "geo"
+    ]
+  },
+  {
+    "subsection": "Team Challenges",
+    "activity": "57. Facsimile",
+    "description": "Send and receive a fax",
+    "points": "500",
+    "types": [
+      "short_answer",
+      "image",
+      "geo"
+    ]
+  },
+  {
+    "subsection": "Team Challenges",
+    "activity": "58. Last to Church",
+    "description": "Take a photo in front of a church in the suburb that is the answer to Question 30",
+    "points": "400",
+    "types": [
+      "short_answer",
+      "image",
+      "geo"
+    ]
+  },
+  {
+    "subsection": "Team Challenges",
+    "activity": "59. Pitch a tent #3",
+    "description": "Pitch a tent on a beach",
+    "points": "200",
+    "types": [
+      "short_answer",
+      "image",
+      "geo"
+    ]
+  },
+  {
+    "subsection": "Team Challenges",
+    "activity": "60. Kangaroos #2",
+    "description": "Visit the kangaroo statues boxing in Byford",
+    "points": "200",
+    "types": [
+      "short_answer",
+      "image",
+      "geo"
+    ]
+  },
+  {
+    "subsection": "Team Challenges",
+    "activity": "61. Mum & Dad",
+    "description": "Get a team member's parent to join in to double any activities points",
+    "points": "x2",
+    "types": [
+      "short_answer",
+      "image",
+      "geo"
+    ]
+  },
+  {
+    "subsection": "Team Challenges",
+    "activity": "62. Grandma & Grandpa",
+    "description": "Get a team member's grandparent to join in to triple any activities points",
+    "points": "x3",
+    "types": [
+      "short_answer",
+      "image",
+      "geo"
+    ]
+  },
+  {
+    "subsection": "Team Challenges",
+    "activity": "63. Great-grandma & Great-grandpa",
+    "description": "Get a team member's great-grandparent to join in to quadruple any activities points",
+    "points": "x4",
+    "types": [
+      "short_answer",
+      "image",
+      "geo"
+    ]
+  },
+  {
+    "subsection": "Team Challenges",
+    "activity": "64. Storm the Castle",
+    "description": "Have someone jump in the moat at UWA",
+    "points": "400",
+    "types": [
+      "short_answer",
+      "image",
+      "geo"
+    ]
+  },
+  {
+    "subsection": "Team Challenges",
+    "activity": "65. Old School",
+    "description": "Earn any of the old Cub Achievement badges from start to finish",
+    "points": "200",
+    "types": [
+      "short_answer",
+      "image",
+      "geo"
+    ]
+  },
+  {
+    "subsection": "Team Challenges",
+    "activity": "66. Wild",
+    "description": "Get a picture with any wild animal not found at Perth Zoo",
+    "points": "300",
+    "types": [
+      "short_answer",
+      "image",
+      "geo"
+    ]
+  },
+  {
+    "subsection": "Team Challenges",
+    "activity": "67. WARC Exec",
+    "description": "Get a photo with each member of the WARC Executive (does not count if they're on your team)",
+    "points": "25",
+    "types": [
+      "short_answer",
+      "image",
+      "geo"
+    ]
+  },
+  {
+    "subsection": "Team Challenges",
+    "activity": "68. Michael said to do this",
+    "description": "Put a street cone on top of a bench and take a photo",
+    "points": "100",
+    "types": [
+      "short_answer",
+      "image",
+      "geo"
+    ]
+  },
+  {
+    "subsection": "Team Challenges",
+    "activity": "69. What Scouts Really Do",
+    "description": "Help an old person cross the road (bonus if they didn't want to cross the road)",
+    "points": "200",
+    "types": [
+      "short_answer",
+      "image",
+      "geo"
+    ]
+  },
+  {
+    "subsection": "Team Challenges",
+    "activity": "70. Team Trees",
+    "description": "Plant a tree (or any other plant)",
+    "points": "200",
+    "types": [
+      "short_answer",
+      "image",
+      "geo"
+    ]
+  },
+  {
+    "subsection": "Team Challenges",
+    "activity": "71. #RoversDoStuff",
+    "description": "Spell out the word ROVER with your bodies",
+    "points": "300",
+    "types": [
+      "short_answer",
+      "image",
+      "geo"
+    ]
+  },
+  {
+    "subsection": "Team Challenges",
+    "activity": "72. Just Dance",
+    "description": "Perform a TikTok dance",
+    "points": "200",
+    "types": [
+      "short_answer",
+      "image",
+      "geo"
+    ]
+  },
+  {
+    "subsection": "Team Challenges",
+    "activity": "73. We're rich!",
+    "description": "Find a water fountain with a coin in it",
+    "points": "300",
+    "types": [
+      "short_answer",
+      "image",
+      "geo"
+    ]
+  },
+  {
+    "subsection": "Team Challenges",
+    "activity": "74. Or not :(",
+    "description": "Try some free samples",
+    "points": "200",
+    "types": [
+      "short_answer",
+      "image",
+      "geo"
+    ]
+  },
+  {
+    "subsection": "Team Challenges",
+    "activity": "75. Patriotism",
+    "description": "Find an American flag on a flagpole",
+    "points": "400",
+    "types": [
+      "short_answer",
+      "image",
+      "geo"
+    ]
+  },
+  {
+    "subsection": "Team Challenges",
+    "activity": "76. Lying 24/7",
+    "description": "Find a 24/7 neon sign that isn't lit up",
+    "points": "200",
+    "types": [
+      "short_answer",
+      "image",
+      "geo"
+    ]
+  },
+  {
+    "subsection": "Team Challenges",
+    "activity": "77. Row, Row, Row your boat",
+    "description": "Get a photo in a canoe",
+    "points": "100",
+    "types": [
+      "short_answer",
+      "image",
+      "geo"
+    ]
+  },
+  {
+    "subsection": "Team Challenges",
+    "activity": "78. Fishing for Points",
+    "description": "Catch a fish",
+    "points": "400",
+    "types": [
+      "short_answer",
+      "image",
+      "geo"
+    ]
+  },
+  {
+    "subsection": "Team Challenges",
+    "activity": "79. Zig Zags",
+    "description": "Get a photo at the Zig Zags",
+    "points": "400",
+    "types": [
+      "short_answer",
+      "image",
+      "geo"
+    ]
+  },
+  {
+    "subsection": "Team Challenges",
+    "activity": "80. Jokes",
+    "description": "Tell a joke to a stranger (and get them to laugh)",
+    "points": "200",
+    "types": [
+      "short_answer",
+      "image",
+      "geo"
+    ]
+  },
+  {
+    "subsection": "Team Challenges",
+    "activity": "81. Rolls-Royce",
+    "description": "Take a photo in front of the shabbiest car you can find, but post as if it were a luxury vehicle",
+    "points": "200",
+    "types": [
+      "short_answer",
+      "image",
+      "geo"
+    ]
+  },
+  {
+    "subsection": "Team Challenges",
+    "activity": "82. Pitch a tent #4",
+    "description": "Pitch a tent inside a public library",
+    "points": "300",
+    "types": [
+      "short_answer",
+      "image",
+      "geo"
+    ]
+  },
+  {
+    "subsection": "Team Challenges",
+    "activity": "83. Kangaroos #3",
+    "description": "Visit the Kangaroo statues going home at the Florence Hummerston Reserve",
+    "points": "150",
+    "types": [
+      "short_answer",
+      "image",
+      "geo"
+    ]
+  },
+  {
+    "subsection": "Team Challenges",
+    "activity": "84. Quokkas",
+    "description": "Take a photo from Rottnest with Perth City in the background (or vice versa)",
+    "points": "500 or 100",
+    "types": [
+      "short_answer",
+      "image",
+      "geo"
+    ]
+  },
+  {
+    "subsection": "Team Challenges",
+    "activity": "85. Plum Pudding",
+    "description": "Eat plum pudding on plumpudding beach",
+    "points": "600",
+    "types": [
+      "short_answer",
+      "image",
+      "geo"
+    ]
+  },
+  {
+    "subsection": "Team Challenges",
+    "activity": "86. Hallowe'en #1",
+    "description": "Have a spooky picnic in a cemetary",
+    "points": "300",
+    "types": [
+      "short_answer",
+      "image",
+      "geo"
+    ]
+  },
+  {
+    "subsection": "Team Challenges",
+    "activity": "87. Secrets",
+    "description": "Enter the secret code on the app",
+    "points": "200",
+    "types": [
+      "short_answer",
+      "image",
+      "geo"
+    ]
+  },
+  {
+    "subsection": "Team Challenges",
+    "activity": "88. Abbotts to Zanthus",
+    "description": "Find green directional signs with town names from A-Z. Use the A-Z list to help you out",
+    "points": "25",
+    "types": [
+      "short_answer",
+      "image",
+      "geo"
+    ]
+  },
+  {
+    "subsection": "Team Challenges",
+    "activity": "89. Bike Month",
+    "description": "Cycle to your next activity",
+    "points": "400",
+    "types": [
+      "short_answer",
+      "image",
+      "geo"
+    ]
+  },
+  {
+    "subsection": "Team Challenges",
+    "activity": "90. History Lesson",
+    "description": "Get a photo in front of a heritage listed school",
+    "points": "300",
+    "types": [
+      "short_answer",
+      "image",
+      "geo"
+    ]
+  },
+  {
+    "subsection": "Team Challenges",
+    "activity": "91. Pitch a tent #5",
+    "description": "Pitch a tent in the Chief Commissioner's favourite parking lot",
+    "points": "400",
+    "types": [
+      "short_answer",
+      "image",
+      "geo"
+    ]
+  },
+  {
+    "subsection": "Team Challenges",
+    "activity": "92. Hallowe'en #2",
+    "description": "Carve a pumpkin, cutest pumpkin gets bonus points",
+    "points": "400",
+    "types": [
+      "short_answer",
+      "image",
+      "geo"
+    ]
+  },
+  {
+    "subsection": "Team Challenges",
+    "activity": "93. Lost",
+    "description": "Visit the Esperance information centre and get an info booklet",
+    "points": "600",
+    "types": [
+      "short_answer",
+      "image",
+      "geo"
+    ]
+  },
+  {
+    "subsection": "Team Challenges",
+    "activity": "94. National Bird Week",
+    "description": "Take a photo of your favourite bird",
+    "points": "100",
+    "types": [
+      "short_answer",
+      "image",
+      "geo"
+    ]
+  },
+  {
+    "subsection": "Team Challenges",
+    "activity": "95. Bacon Lettuce and Tomato",
+    "description": "Get a photo with each member of the BLT",
+    "points": "150",
+    "types": [
+      "short_answer",
+      "image",
+      "geo"
+    ]
+  },
+  {
+    "subsection": "Team Challenges",
+    "activity": "96. Trick or Treat",
+    "description": "Dress up and knock on someone's door asking for a trick or treat",
+    "points": "400",
+    "types": [
+      "short_answer",
+      "image",
+      "geo"
+    ]
+  },
+  {
+    "subsection": "Team Challenges",
+    "activity": "97. Award Winning",
+    "description": "Purchase a meat pie from a bakery that has won a pie baking competition",
+    "points": "200",
+    "types": [
+      "short_answer",
+      "image",
+      "geo"
+    ]
+  },
+  {
+    "subsection": "Team Challenges",
+    "activity": "98. Perth's Best Attraction",
+    "description": "Need I say more?",
+    "points": "400",
+    "types": [
+      "short_answer",
+      "image",
+      "geo"
+    ]
+  },
+  {
+    "subsection": "Team Challenges",
+    "activity": "99. Kangaroos #4",
+    "description": "Find a kangaroo and take a photo with it",
+    "points": "300",
+    "types": [
+      "short_answer",
+      "image",
+      "geo"
+    ]
+  },
+  {
+    "subsection": "Team Challenges",
+    "activity": "100. JOTA/JOTI",
+    "description": "Go to a scout hall hosting a JOTA/JOTI camp and make a radio call across the world",
+    "points": "300",
+    "types": [
+      "short_answer",
+      "image",
+      "geo"
+    ]
+  }
+]

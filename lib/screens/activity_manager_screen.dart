@@ -40,6 +40,7 @@ import '../widgets/answer_type_picker.dart';
 import '../widgets/loading_spinner.dart';
 import '../widgets/options_editor.dart';
 import '../widgets/popups.dart';
+import '../widgets/signed_integer_input_formatter.dart';
 import '../widgets/surface_card.dart';
 
 const int _maxPoints = 1000000;
@@ -292,16 +293,7 @@ class _ManagerPageState extends State<_ManagerPage> {
   }
 
   Future<void> _removeSubsection(ManagedSubsection subsection) async {
-    bool removed = false;
-    await _run(() async {
-      removed = await deleteSubsection(widget.db, subsection.id);
-    });
-    if (removed || !mounted) return;
-    Toast.show(
-      context: context,
-      message: 'Delete its activities first.',
-      type: ToastType.warning,
-    );
+    await _run(() => deleteSubsection(widget.db, subsection.id));
   }
 
   void _deleteSubsection(ManagedSubsection subsection) {
@@ -309,7 +301,9 @@ class _ManagerPageState extends State<_ManagerPage> {
       ConfirmationPopup.show(
         context: context,
         title: 'Delete "${subsection.name}"?',
-        description: 'This removes the subsection. It must have no activities.',
+        description:
+            'This removes the subsection and all its activities. '
+            'Existing answers are kept.',
         confirmLabel: 'Delete',
         cancelLabel: 'Cancel',
         destructive: true,
@@ -655,6 +649,39 @@ class _SectionTile extends StatelessWidget {
         activities.length == 1 ? '1 activity' : '${activities.length} activities',
       ),
       children: <Widget>[
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8),
+          child: Wrap(
+            alignment: WrapAlignment.start,
+            spacing: 8,
+            children: <Widget>[
+              Button.small(
+                label: 'Add activity',
+                icon: const Icon(Icons.add),
+                variant: ButtonVariant.outline,
+                onPressed: onAdd,
+              ),
+              Button.small(
+                label: 'Add several',
+                icon: const Icon(Icons.library_add_outlined),
+                variant: ButtonVariant.outline,
+                onPressed: onAddSeveral,
+              ),
+              Button.small(
+                label: 'Rename',
+                icon: const Icon(Icons.drive_file_rename_outline),
+                variant: ButtonVariant.outline,
+                onPressed: onRename,
+              ),
+              Button.small(
+                label: 'Delete subsection',
+                icon: const Icon(Icons.delete_outline),
+                variant: ButtonVariant.outline,
+                onPressed: onDelete,
+              ),
+            ],
+          ),
+        ),
         ToggleTile(
           title: 'View-only for players',
           subtitle: adminOnlySubmission
@@ -711,38 +738,6 @@ class _SectionTile extends StatelessWidget {
               ],
             );
           },
-        ),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8),
-          child: Wrap(
-            spacing: 8,
-            children: <Widget>[
-              Button.small(
-                label: 'Add activity',
-                icon: const Icon(Icons.add),
-                variant: ButtonVariant.ghost,
-                onPressed: onAdd,
-              ),
-              Button.small(
-                label: 'Add several',
-                icon: const Icon(Icons.library_add_outlined),
-                variant: ButtonVariant.ghost,
-                onPressed: onAddSeveral,
-              ),
-              Button.small(
-                label: 'Rename',
-                icon: const Icon(Icons.drive_file_rename_outline),
-                variant: ButtonVariant.ghost,
-                onPressed: onRename,
-              ),
-              Button.small(
-                label: 'Delete subsection',
-                icon: const Icon(Icons.delete_outline),
-                variant: ButtonVariant.ghost,
-                onPressed: onDelete,
-              ),
-            ],
-          ),
         ),
       ],
     );
@@ -952,10 +947,14 @@ class _BulkFormState extends State<_BulkForm> {
                 labelText: 'Points each',
                 helperText: 'Optional.',
               ),
-              keyboardType: TextInputType.number,
-              inputFormatters: digits,
+              keyboardType: const TextInputType.numberWithOptions(
+                signed: true,
+              ),
+              inputFormatters: const <TextInputFormatter>[
+                SignedIntegerInputFormatter(),
+              ],
               validator: (String? v) =>
-                  validateOptionalCount(v, max: _maxPoints),
+                  validateOptionalSignedCount(v, maxMagnitude: _maxPoints),
             ),
             TextFormField(
               controller: _offset,
@@ -1165,6 +1164,9 @@ class _SubsectionQuillEditorState extends State<SubsectionQuillEditor> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
             QuillSimpleToolbar(
+              key: PageStorageKey<String>(
+                'quill-toolbar-${widget.subsectionId}',
+              ),
               controller: _controller,
               config: const QuillSimpleToolbarConfig(
                 multiRowsDisplay: false,
@@ -1175,6 +1177,9 @@ class _SubsectionQuillEditorState extends State<SubsectionQuillEditor> {
               constraints: const BoxConstraints(minHeight: 100, maxHeight: 250),
               padding: const EdgeInsets.all(12),
               child: QuillEditor.basic(
+                key: PageStorageKey<String>(
+                  'quill-editor-${widget.subsectionId}',
+                ),
                 controller: _controller,
                 config: const QuillEditorConfig(
                   scrollable: true,

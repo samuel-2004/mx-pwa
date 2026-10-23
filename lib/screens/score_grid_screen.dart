@@ -4,7 +4,6 @@ import 'package:flutter/foundation.dart' show debugPrint, kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart'
     show
-        FilteringTextInputFormatter,
         LengthLimitingTextInputFormatter,
         TextInputFormatter;
 import 'package:powersync/powersync.dart' show PowerSyncDatabase, SyncStatus;
@@ -26,6 +25,7 @@ import '../orient_ui/tag.dart';
 import '../orient_ui/tappable_icon.dart';
 import '../orient_ui/toast.dart';
 import '../widgets/loading_spinner.dart';
+import '../widgets/signed_integer_input_formatter.dart';
 
 const double _labelWidth = 200;
 const double _cellWidth = 96;
@@ -34,6 +34,17 @@ const String _generalSectionKey = '__general__';
 
 // The ceiling when an activity has no points set.
 const int _maxPoints = 1000000;
+
+/// Maps reward and penalty endpoints to the score range the admin may enter.
+({int minimum, int maximum}) _allowedScoreRange(int? activityPoints) {
+  if (activityPoints == null) {
+    return (minimum: -_maxPoints, maximum: _maxPoints);
+  }
+  if (activityPoints < 0) {
+    return (minimum: activityPoints, maximum: 0);
+  }
+  return (minimum: 0, maximum: activityPoints);
+}
 
 /// Bulk score entry for admins: one row per activity, one column per team.
 ///
@@ -62,7 +73,11 @@ class _Draft {
   final String teamId;
   final int points;
 
-  bool get exceedsLimit => points > (activity.points ?? _maxPoints);
+  bool get isOutOfRange {
+    final ({int minimum, int maximum}) range =
+        _allowedScoreRange(activity.points);
+    return points < range.minimum || points > range.maximum;
+  }
 }
 
 class _ScoreGridScreenState extends State<ScoreGridScreen> {
@@ -215,8 +230,8 @@ class _ScoreGridScreenState extends State<ScoreGridScreen> {
   Widget _toolbar() {
     final ColorTokens colors = context.style.colors;
     final int count = _drafts.length;
-    final int tooHigh =
-        _drafts.values.where((_Draft draft) => draft.exceedsLimit).length;
+    final int outOfRange =
+        _drafts.values.where((_Draft draft) => draft.isOutOfRange).length;
     return Padding(
       padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
       child: Column(
@@ -243,7 +258,7 @@ class _ScoreGridScreenState extends State<ScoreGridScreen> {
               Button.small(
                 label: count == 0 ? 'Save' : 'Save $count',
                 loading: _busy,
-                onPressed: count == 0 || tooHigh > 0 ? null : _save,
+                onPressed: count == 0 || outOfRange > 0 ? null : _save,
               ),
               Button.small(
                 label: 'Discard',
@@ -252,11 +267,11 @@ class _ScoreGridScreenState extends State<ScoreGridScreen> {
               ),
             ],
           ),
-          if (tooHigh > 0)
+          if (outOfRange > 0)
             InfoBanner(
-              title: tooHigh == 1
-                  ? '1 score is above what its activity is worth.'
-                  : '$tooHigh scores are above what their activities are worth.',
+              title: outOfRange == 1
+                  ? '1 score is outside its activity\'s point range.'
+                  : '$outOfRange scores are outside their activities\' point ranges.',
               variant: InfoBannerVariant.error,
             ),
           if (_error != null)
@@ -445,7 +460,7 @@ class _ScoreGridScreenState extends State<ScoreGridScreen> {
     for (final GridActivity activity in activities) {
       final int? points = activity.points;
       if (points == null) return null;
-      total += points;
+      if (points > 0) total += points;
     }
     return total;
   }
@@ -539,8 +554,12 @@ class _ActivityLabel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final TypographyTokens typography = context.typography;
-    final String detail =
-        activity.points == null ? 'No points set' : 'Max ${activity.points} points';
+    final int? points = activity.points;
+    final String detail = points == null
+        ? 'No points set'
+        : (points < 0
+            ? 'Penalty up to ${points.abs()} points'
+            : 'Max $points points');
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
       child: Column(
@@ -633,8 +652,8 @@ class _ScoreCellState extends State<_ScoreCell> {
     return widget.submitted ? colors.warning : null;
   }
 
-  Color _borderColor(ColorTokens colors, {required bool tooHigh}) {
-    if (tooHigh) return colors.error;
+  Color _borderColor(ColorTokens colors, {required bool outOfRange}) {
+    if (outOfRange) return colors.error;
     if (_focus.hasFocus) return colors.foreground;
     if (widget.draft != null) return colors.info;
     return colors.border;
@@ -646,8 +665,11 @@ class _ScoreCellState extends State<_ScoreCell> {
     final TypographyTokens typography = context.typography;
     final int? points = widget.points;
     final int? draft = widget.draft;
-    final bool tooHigh = draft != null && draft > (widget.limit ?? _maxPoints);
-    final bool thick = tooHigh || draft != null || _focus.hasFocus;
+    final ({int minimum, int maximum}) range =
+        _allowedScoreRange(widget.limit);
+    final bool outOfRange = draft != null &&
+        (draft < range.minimum || draft > range.maximum);
+    final bool thick = outOfRange || draft != null || _focus.hasFocus;
     // The saved score stays visible as a hint while the cell is being edited.
     final String hint =
         points != null ? '$points' : (widget.submitted ? 'Pending' : '-');
@@ -657,7 +679,7 @@ class _ScoreCellState extends State<_ScoreCell> {
         decoration: BoxDecoration(
           color: _statusColor(colors)?.withValues(alpha: 0.15),
           border: Border.all(
-            color: _borderColor(colors, tooHigh: tooHigh),
+            color: _borderColor(colors, outOfRange: outOfRange),
             width: thick ? 2 : 1,
           ),
           borderRadius: BorderRadius.circular(Style.radii.small),
@@ -667,14 +689,14 @@ class _ScoreCellState extends State<_ScoreCell> {
             controller: _text,
             focusNode: _focus,
             textAlign: TextAlign.center,
-            keyboardType: TextInputType.number,
+            keyboardType: const TextInputType.numberWithOptions(signed: true),
             inputFormatters: <TextInputFormatter>[
-              FilteringTextInputFormatter.digitsOnly,
-              // Seven digits fit the one million ceiling.
-              LengthLimitingTextInputFormatter(7),
+              const SignedIntegerInputFormatter(),
+              // Seven digits plus a possible minus sign fit the ceiling.
+              LengthLimitingTextInputFormatter(8),
             ],
             style: typography.subtitle.copyWith(
-              color: tooHigh ? colors.error : null,
+              color: outOfRange ? colors.error : null,
             ),
             decoration: InputDecoration(
               isDense: true,

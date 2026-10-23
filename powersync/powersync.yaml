@@ -51,6 +51,7 @@ streams:
             game_id,
             subsection_id,
             name,
+            "desc",
             answer_schema,
             can_resubmit,
             release_time_offset_minutes,

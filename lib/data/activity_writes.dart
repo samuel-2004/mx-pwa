@@ -421,24 +421,22 @@ Future<void> renameSubsection(
   );
 }
 
-/// Soft-deletes subsection [id] if it has no activities.
-///
-/// Returns false, changing nothing, when activities remain. Throws if the
-/// local write fails.
-Future<bool> deleteSubsection(PowerSyncDatabase db, String id) {
+/// Soft-deletes subsection [id] and its active activities in one transaction.
+/// Existing answers remain attached to the soft-deleted activities.
+/// [db] is the PowerSync database. [id] is the subsection ID.
+/// Completes after the transaction commits. Throws if a local write fails.
+Future<void> deleteSubsection(PowerSyncDatabase db, String id) {
   return db.writeTransaction((tx) async {
-    final count = await tx.get(
-      'SELECT COUNT(*) AS n FROM activities '
-      'WHERE subsection_id = ? AND deleted_at IS NULL',
-      <Object?>[id],
-    );
-    if ((count['n'] as int) > 0) return false;
     final String now = _now();
+    await tx.execute(
+      'UPDATE activities SET deleted_at = ?, updated_at = ? '
+      'WHERE subsection_id = ? AND deleted_at IS NULL',
+      <Object?>[now, now, id],
+    );
     await tx.execute(
       'UPDATE subsections SET deleted_at = ?, updated_at = ? WHERE id = ?',
       <Object?>[now, now, id],
     );
-    return true;
   });
 }
 
