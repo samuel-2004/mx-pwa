@@ -12,6 +12,7 @@ class Button extends StatefulWidget {
   final Widget? icon;
   final bool loading;
   final ButtonVariant variant;
+  final FontWeight fontWeight;
   final bool _isSmall;
 
   const Button({
@@ -21,6 +22,7 @@ class Button extends StatefulWidget {
     this.icon,
     this.loading = false,
     this.variant = ButtonVariant.primary,
+    this.fontWeight = FontWeight.w500,
   }) : _isSmall = false;
 
   const Button.small({
@@ -30,6 +32,7 @@ class Button extends StatefulWidget {
     this.icon,
     this.loading = false,
     this.variant = ButtonVariant.primary,
+    this.fontWeight = FontWeight.w500,
   }) : _isSmall = true;
 
   @override
@@ -227,7 +230,7 @@ class _ButtonState extends State<Button> with SingleTickerProviderStateMixin {
                             color: fg,
                             fontSize: fontSize,
                             decorationColor: fg,
-                            fontWeight: FontWeight.w500,
+                            fontWeight: widget.fontWeight,
                             decoration:
                                 widget.variant == ButtonVariant.link &&
                                     _isHovered

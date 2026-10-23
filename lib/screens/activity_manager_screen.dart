@@ -248,12 +248,14 @@ class _ManagerPageState extends State<_ManagerPage> {
         if (name == null) return;
         unawaited(
           _run(
-            () => createSubsection(
-              widget.db,
-              gameId: widget.gameId,
-              name: name,
-              drafts: numberedDrafts(result.draft, result.count),
-            ),
+            () async {
+              await createSubsection(
+                widget.db,
+                gameId: widget.gameId,
+                name: name,
+                drafts: numberedDrafts(result.draft, result.count),
+              );
+            },
           ),
         );
       },
@@ -427,7 +429,10 @@ class _ManagerPageState extends State<_ManagerPage> {
     );
   }
 
-  Future<void> _import({required bool allowResubmission}) async {
+  Future<void> _import({
+    required bool allowResubmission,
+    required GameSettings settings,
+  }) async {
     final List<PlatformFile> picked = await FilePicker.pickFiles(
       type: FileType.custom,
       allowedExtensions: const <String>['md', 'csv', 'json'],
@@ -451,16 +456,27 @@ class _ManagerPageState extends State<_ManagerPage> {
     }
 
     final bool saved = await _run(() async {
+      final Set<String> viewOnlyIds =
+          adminOnlySubmissionSubsections(settings.options);
+      final int initialViewOnlyCount = viewOnlyIds.length;
       for (final ImportSubsection s in subsections) {
-        await createSubsection(
+        final String subsectionId = await createSubsection(
           widget.db,
           gameId: widget.gameId,
           name: s.name,
+          description: s.description,
           drafts: <ActivityDraft>[
             for (final ActivityDraft draft in s.drafts)
               _withResubmissionSetting(draft, allowResubmission),
           ],
         );
+        if (s.viewOnly) viewOnlyIds.add(subsectionId);
+      }
+      if (viewOnlyIds.length > initialViewOnlyCount) {
+        final Map<String, dynamic> options =
+            Map<String, dynamic>.of(settings.options);
+        options[adminOnlySubmissionsOptionKey] = viewOnlyIds.toList();
+        await _settingsApi.save(name: settings.name, options: options);
       }
     });
 
@@ -476,7 +492,10 @@ class _ManagerPageState extends State<_ManagerPage> {
     );
   }
 
-  Widget _smallScreenAction(bool allowResubmission) {
+  Widget _smallScreenAction(
+    bool allowResubmission,
+    GameSettings settings,
+  ) {
     return PopupMenuButton<_ManagerAction>(
       tooltip: 'Activity actions',
       onSelected: (_ManagerAction action) {
@@ -486,7 +505,10 @@ class _ManagerPageState extends State<_ManagerPage> {
           case _ManagerAction.export:
             _export();
           case _ManagerAction.import:
-            _import(allowResubmission: allowResubmission);
+            _import(
+              allowResubmission: allowResubmission,
+              settings: settings,
+            );
         }
       },
       itemBuilder: (BuildContext context) => <PopupMenuEntry<_ManagerAction>>[
@@ -545,7 +567,7 @@ class _ManagerPageState extends State<_ManagerPage> {
             settings.get<bool>(allowResubmissionOptionKey) ?? true;
         return AppScaffold(
           title: 'Activities',
-          smallScreenAction: _smallScreenAction(allowResubmission),
+          smallScreenAction: _smallScreenAction(allowResubmission, settings),
           floatingActionButton: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.end,
@@ -566,7 +588,10 @@ class _ManagerPageState extends State<_ManagerPage> {
                 label: 'Import',
                 icon: const Icon(Icons.file_upload_outlined),
                 onPressed: () =>
-                    _import(allowResubmission: allowResubmission),
+                    _import(
+                      allowResubmission: allowResubmission,
+                      settings: settings,
+                    ),
               ),
             ],
           ),
@@ -700,6 +725,7 @@ class _SectionTile extends StatelessWidget {
         ),
 
         ReorderableListView.builder(
+          key: PageStorageKey<String>('activities-${subsection.id}'),
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
           itemCount: activities.length,
@@ -1170,6 +1196,13 @@ class _SubsectionQuillEditorState extends State<SubsectionQuillEditor> {
               controller: _controller,
               config: const QuillSimpleToolbarConfig(
                 multiRowsDisplay: false,
+                showInlineCode: false,
+                showSubscript: false,
+                showSuperscript: false,
+                showHeaderStyle: false,
+                showIndent: false,
+                showSearchButton: false,
+                showQuote: false,
               ),
             ),
             const Divider(height: 1),

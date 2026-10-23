@@ -185,14 +185,16 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
               const SizedBox(height: 16),
               Button(
-                label: 'Sign in',
+                label: 'SIGN IN',
                 loading: _busy,
+                fontWeight: FontWeight.bold,
                 onPressed: _submit,
               ),
               const SizedBox(height: 8),
               Button(
-                label: 'Join game',
+                label: 'JOIN GAME',
                 variant: ButtonVariant.secondary,
+                fontWeight: FontWeight.bold,
                 onPressed: _busy ? null : _joinGame,
               ),
               const SizedBox(height: 8),

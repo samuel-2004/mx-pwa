@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
+import 'package:dart_quill_delta/dart_quill_delta.dart' show Delta;
 import 'package:file_picker/file_picker.dart' show PlatformFile;
 import 'package:flutter/foundation.dart' show debugPrint, kDebugMode;
 
@@ -40,6 +41,7 @@ class ImportSubsection {
   const ImportSubsection({
     required this.name,
     required this.description,
+    required this.viewOnly,
     required this.drafts,
   });
 
@@ -47,6 +49,7 @@ class ImportSubsection {
 
   /// Quill Delta JSON, or empty when the file had no description.
   final String description;
+  final bool viewOnly;
   final List<ActivityDraft> drafts;
 }
 
@@ -61,7 +64,7 @@ Future<List<ImportSubsection>> parseImportFiles(
   List<PlatformFile> files,
 ) async {
   final _Collector collector = _Collector();
-    for (final PlatformFile file in files) {
+  for (final PlatformFile file in files) {
     try {
       final int? length = await file.length();
       if (kDebugMode) debugPrint('[import] ${file.name}: reported length $length');
@@ -84,9 +87,10 @@ Future<List<ImportSubsection>> parseImportFiles(
 }
 
 class _Pending {
-  _Pending(this.description);
+  _Pending(this.description, this.viewOnly);
 
   String description;
+  bool viewOnly;
   final List<ActivityDraft> drafts = <ActivityDraft>[];
 }
 
@@ -94,23 +98,31 @@ class _Collector {
   final Map<String, _Pending> _byName = <String, _Pending>{};
   int _activityCount = 0;
 
-  _Pending subsection(String rawName, {String description = ''}) {
+  _Pending subsection(
+    String rawName, {
+    String description = '',
+    String? descriptionJson,
+    bool viewOnly = false,
+  }) {
     final String name = _clean(rawName);
     final String? error = validateSubsectionName(name);
     if (error != null) {
       throw ImportFormatException('Subsection "$name": $error');
     }
+    final String storedDescription =
+        descriptionJson ?? _descriptionJson(description);
     final _Pending? existing = _byName[name];
     if (existing != null) {
+      existing.viewOnly = existing.viewOnly || viewOnly;
       if (existing.description.isEmpty) {
-        existing.description = _descriptionJson(description);
+        existing.description = storedDescription;
       }
       return existing;
     }
     if (_byName.length >= _maxSubsections) {
       throw const ImportFormatException('Too many subsections (max 100).');
     }
-    return _byName[name] = _Pending(_descriptionJson(description));
+    return _byName[name] = _Pending(storedDescription, viewOnly);
   }
 
   void addActivity(
@@ -168,6 +180,7 @@ class _Collector {
         ImportSubsection(
           name: e.key,
           description: e.value.description,
+          viewOnly: e.value.viewOnly,
           drafts: e.value.drafts,
         ),
     ];
@@ -332,12 +345,60 @@ void _readJson(String text, _Collector collector) {
   }
   if (kDebugMode) debugPrint('[import] JSON top level: ${decoded.runtimeType}');
   if (decoded is! List) {
-    throw const ImportFormatException('Expected a JSON list of activities.');
+    throw const ImportFormatException('Expected a JSON list.');
   }
   if (kDebugMode) debugPrint('[import] JSON entries: ${decoded.length}');
-  final Object? first = decoded.isEmpty ? null : decoded.first;
-  if (first is Map) if (kDebugMode) debugPrint('[import] JSON first entry keys: ${first.keys.toList()}');
 
+  final Object? first = decoded.isEmpty ? null : decoded.first;
+  if (first is Map &&
+      (first.containsKey('name') ||
+          first.containsKey('desc') ||
+          first.containsKey('view_only') ||
+          first.containsKey('activities'))) {
+    _readSubsectionJson(decoded, collector);
+    return;
+  }
+
+  _readFlatActivityJson(decoded, collector);
+}
+
+void _readSubsectionJson(List<dynamic> decoded, _Collector collector) {
+  for (final Object? item in decoded) {
+    if (item is! Map) {
+      throw const ImportFormatException('Every JSON entry must be an object.');
+    }
+    final String subsectionName = _jsonText(item['name'], 'name');
+    final Object? rawViewOnly = item['view_only'];
+    if (item.containsKey('view_only') && rawViewOnly is! bool) {
+      throw const ImportFormatException('"view_only" must be a boolean.');
+    }
+    final Object? rawActivities = item['activities'];
+    if (rawActivities is! List) {
+      throw const ImportFormatException('"activities" must be a list.');
+    }
+    collector.subsection(
+      subsectionName,
+      descriptionJson: _jsonQuillDescription(item['desc']),
+      viewOnly: rawViewOnly == true,
+    );
+    for (final Object? rawActivity in rawActivities) {
+      if (rawActivity is! Map) {
+        throw const ImportFormatException(
+          'Every activity in "activities" must be an object.',
+        );
+      }
+      collector.addActivity(
+        subsectionName,
+        name: _jsonText(rawActivity['activity'], 'activity'),
+        description: _jsonText(rawActivity['description'], 'description'),
+        points: _jsonText(rawActivity['points'], 'points'),
+        schema: _jsonAnswerSchema(rawActivity['types']),
+      );
+    }
+  }
+}
+
+void _readFlatActivityJson(List<dynamic> decoded, _Collector collector) {
   int activities = 0;
   int subsectionOnly = 0;
   for (final Object? item in decoded) {
@@ -361,6 +422,68 @@ void _readJson(String text, _Collector collector) {
     );
   }
   if (kDebugMode) debugPrint('[import] JSON read: $activities activities, $subsectionOnly subsection-only');
+}
+
+String _jsonQuillDescription(Object? value) {
+  final Object? rawQuill;
+  if (value is Map) {
+    if (value['plaintext'] is! String) {
+      throw const ImportFormatException('"desc.plaintext" must be text.');
+    }
+    rawQuill = value['quill'];
+  } else if (value is List) {
+    // Read the intermediate subsection JSON format for compatibility.
+    rawQuill = value;
+  } else {
+    throw const ImportFormatException('"desc" must be an object.');
+  }
+  if (rawQuill is! List) {
+    throw const ImportFormatException('"desc.quill" must be a Quill Delta list.');
+  }
+
+  final List<Map<String, dynamic>> operations = <Map<String, dynamic>>[];
+  for (final Object? operation in rawQuill) {
+    if (operation is! Map) {
+      throw const ImportFormatException(
+        'Every operation in "desc.quill" must be an object.',
+      );
+    }
+    final Object? insert = operation['insert'];
+    if (insert is! String && insert is! Map) {
+      throw const ImportFormatException(
+        'Every operation in "desc.quill" must contain text or an embed.',
+      );
+    }
+    final Object? attributes = operation['attributes'];
+    if (attributes != null && attributes is! Map) {
+      throw const ImportFormatException(
+        'Quill operation attributes in "desc.quill" must be an object.',
+      );
+    }
+    try {
+      operations.add(Map<String, dynamic>.from(operation));
+    } on Exception {
+      throw const ImportFormatException(
+        'Every operation in "desc.quill" must have string keys.',
+      );
+    }
+  }
+
+  try {
+    final Delta delta = Delta.fromJson(operations);
+    if (delta.isEmpty) return '';
+    final List<dynamic> parsedOperations = delta.toList();
+    if (parsedOperations.isEmpty) return '';
+    final Object? lastData = parsedOperations.last.data;
+    if (!(lastData is String && lastData.endsWith('\n'))) {
+      delta.insert('\n');
+    }
+    return jsonEncode(delta.toJson());
+  } on Exception {
+    throw const ImportFormatException(
+      '"desc.quill" is not a valid Quill Delta.',
+    );
+  }
 }
 
 AnswerSchema _jsonAnswerSchema(Object? rawTypes) {

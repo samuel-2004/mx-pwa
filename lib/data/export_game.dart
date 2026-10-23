@@ -187,16 +187,26 @@ class ExportActivity {
   Uint8List _exportJSON(ExportData data) {
     String out = jsonEncode(<Map<String, Object?>>[
       for (final ExportSubsection subsection in data.subsections)
-        for (final ExportActivityItem activity in subsection.activities)
-          <String, Object?>{
-            'subsection': subsection.name,
-            'activity': activity.name,
-            'description': activity.description,
-            'types': <String>[
-              for (final AnswerType type in activity.types) type.wireName,
-            ],
-            'points': activity.points,
+        <String, Object?>{
+          'name': subsection.name,
+          'desc': <String, Object?>{
+            'quill': subsection.description?.toJson() ?? <Object?>[],
+            'plaintext': subsection.descriptionText,
           },
+          if (subsection.viewOnly) 'view_only': true,
+          'activities': <Map<String, Object?>>[
+            for (final ExportActivityItem activity in subsection.activities)
+              <String, Object?>{
+                'activity': activity.name,
+                'description': activity.description,
+                'types': <String>[
+                  for (final AnswerType type in activity.types)
+                    type.wireName,
+                ],
+                'points': activity.points,
+              },
+          ],
+        },
     ]);
     return Uint8List.fromList(utf8.encode(out));
   }

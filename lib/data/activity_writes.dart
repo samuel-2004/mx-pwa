@@ -251,23 +251,26 @@ Future<void> createActivities(
   required String gameId,
   required String subsectionId,
   required List<ActivityDraft> drafts,
-}) {
-  return _insert(
+}) async {
+  await _insert(
     db,
     gameId: gameId,
     subsectionId: subsectionId,
     newSubsectionName: null,
+    newSubsectionDescription: '',
     drafts: drafts,
   );
 }
 
 /// Creates a subsection after the existing ones, optionally with [drafts].
 ///
-/// Same upload and error behavior as [createActivities].
-Future<void> createSubsection(
+/// [description] is stored as Quill Delta JSON when present. Returns the new
+/// subsection ID. Same upload and error behavior as [createActivities].
+Future<String> createSubsection(
   PowerSyncDatabase db, {
   required String gameId,
   required String name,
+  String description = '',
   List<ActivityDraft> drafts = const <ActivityDraft>[],
 }) {
   return _insert(
@@ -275,18 +278,20 @@ Future<void> createSubsection(
     gameId: gameId,
     subsectionId: null,
     newSubsectionName: name,
+    newSubsectionDescription: description,
     drafts: drafts,
   );
 }
 
-Future<void> _insert(
+Future<String> _insert(
   PowerSyncDatabase db, {
   required String gameId,
   required String? subsectionId,
   required String? newSubsectionName,
+  required String newSubsectionDescription,
   required List<ActivityDraft> drafts,
 }) async {
-  await db.writeTransaction((tx) async {
+  return db.writeTransaction((tx) async {
     String? target = subsectionId;
     if (newSubsectionName != null) {
       final next = await tx.get(
@@ -297,9 +302,15 @@ Future<void> _insert(
       final created = await tx.get('SELECT uuid() AS id');
       target = created['id'] as String;
       await tx.execute(
-        'INSERT INTO subsections (id, game_id, name, subsection_order) '
-        'VALUES (?, ?, ?, ?)',
-        <Object?>[target, gameId, newSubsectionName, next['next']],
+        'INSERT INTO subsections (id, game_id, name, subsection_order, "desc") '
+        'VALUES (?, ?, ?, ?, ?)',
+        <Object?>[
+          target,
+          gameId,
+          newSubsectionName,
+          next['next'],
+          newSubsectionDescription.isEmpty ? null : newSubsectionDescription,
+        ],
       );
     }
 
@@ -329,6 +340,7 @@ Future<void> _insert(
       );
       order++;
     }
+    return target!;
   });
 }
 

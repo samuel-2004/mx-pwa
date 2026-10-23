@@ -4,6 +4,7 @@ import 'package:dart_quill_delta/dart_quill_delta.dart' show Delta;
 import 'package:powersync/powersync.dart' show PowerSyncDatabase;
 
 import 'activity_writes.dart' show AnswerSchema, AnswerType;
+import 'game_options.dart' show adminOnlySubmissionSubsections;
 
 /// An activity as printed in an export.
 class ExportActivityItem {
@@ -28,6 +29,7 @@ class ExportSubsection {
     required this.id,
     required this.name,
     required this.description,
+    required this.viewOnly,
     required this.activities,
   });
 
@@ -36,6 +38,7 @@ class ExportSubsection {
 
   /// The rich-text description, or null when there is none.
   final Delta? description;
+  final bool viewOnly;
   final List<ExportActivityItem> activities;
 
   /// The description with all formatting removed. Empty when there is none.
@@ -154,8 +157,14 @@ String deltaPlainText(Delta delta) {
 /// too. Order matches the activity editor. Throws if a query fails.
 Future<ExportData?> loadExportData(PowerSyncDatabase db) async {
   final game = await db
-      .getOptional('SELECT name FROM games WHERE deleted_at IS NULL LIMIT 1');
+      .getOptional(
+        'SELECT name, game_options FROM games '
+        'WHERE deleted_at IS NULL LIMIT 1',
+      );
   if (game == null) return null;
+
+  final Set<String> viewOnlySubsections =
+      adminOnlySubmissionSubsections(game['game_options']);
 
   final subsections = await db.getAll(
     'SELECT id, name, "desc" AS description FROM subsections '
@@ -191,6 +200,7 @@ Future<ExportData?> loadExportData(PowerSyncDatabase db) async {
           id: row['id'] as String,
           name: (row['name'] as String?) ?? '',
           description: deltaFromStored(row['description'] as String?),
+          viewOnly: viewOnlySubsections.contains(row['id'] as String),
           activities:
               bySubsection[row['id'] as String] ?? const <ExportActivityItem>[],
         ),
