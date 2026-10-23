@@ -26,7 +26,7 @@ class _Destination {
 /// Shared page template for signed-in routes: app bar, role-aware navigation
 /// (bottom bar on narrow screens, side rail on wide ones, switched by
 /// [NavBar] at the Orient UI desktop breakpoint) and a centered,
-/// width-limited content area.
+/// width-limited content area by default.
 ///
 /// Screens use this instead of [Scaffold] and pass only their own content.
 /// To add a destination, add it to `_destinationsFor`.
@@ -37,6 +37,7 @@ class AppScaffold extends StatelessWidget {
     this.actions = const <Widget>[],
     this.floatingActionButton,
     this.smallScreenAction,
+    this.fullWidthBody = false,
     super.key,
   });
 
@@ -56,11 +57,18 @@ class AppScaffold extends StatelessWidget {
   /// Optional compact replacement for [floatingActionButton] in the app bar.
   final Widget? smallScreenAction;
 
+  /// Whether [body] can use the full available width instead of the shared
+  /// content width limit.
+  final bool fullWidthBody;
+
   // Mirrors the route guards. The server must enforce the same rules.
   List<_Destination> _destinationsFor(AuthState auth) {
     final bool isStaff = auth.isAdmin || auth.isSubsectionAdmin;
     return <_Destination>[
-      if (!auth.isSubsectionAdmin) const _Destination('Activities', Icons.list_alt, Routes.activities),
+      if (!auth.isSubsectionAdmin)
+        const _Destination('Activities', Icons.list_alt, Routes.activities),
+      if (auth.isAdmin)
+        const _Destination('Map', Icons.map_outlined, Routes.geoMap),
       const _Destination('Scoreboard', Icons.leaderboard, Routes.scoreboard),
       if (isStaff) const _Destination('Grading', Icons.grading, Routes.grading),
       if (auth.isAdmin) const _Destination('Users', Icons.group, Routes.users),
@@ -98,7 +106,9 @@ class AppScaffold extends StatelessWidget {
             Align(
               alignment: Alignment.topCenter,
               child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: _maxContentWidth),
+                constraints: BoxConstraints(
+                  maxWidth: fullWidthBody ? double.infinity : _maxContentWidth,
+                ),
                 child: body,
               ),
             ),

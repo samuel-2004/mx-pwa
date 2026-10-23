@@ -210,10 +210,39 @@ class _SubmitAnswerScreenState extends State<SubmitAnswerScreen> {
       return;
     }
 
+    final bool requiresLocationServices =
+        schema.asksLocation && geoMode == GeoMode.auto;
+    if (requiresLocationServices) {
+      setState(() {
+        _busy = true;
+        _error = null;
+      });
+      bool locationServicesEnabled;
+      try {
+        locationServicesEnabled = await isLocationServiceEnabled();
+      } on Exception {
+        if (!mounted) return;
+        setState(() {
+          _busy = false;
+          _error = 'Could not check location services. Try again.';
+        });
+        return;
+      }
+      if (!mounted) return;
+      if (!locationServicesEnabled) {
+        setState(() {
+          _busy = false;
+          _error =
+              'Turn on location services in your device settings to submit this activity.';
+        });
+        return;
+      }
+    }
+
     // Automatic mode reads the device only now, so the position is current.
     // It is not kept in state: a retry after a failed upload reads it again.
     GeoPoint? geo = _geo;
-    if (schema.asksLocation && geo == null && geoMode == GeoMode.auto) {
+    if (requiresLocationServices && geo == null) {
       setState(() {
         _busy = true;
         _error = null;

@@ -9,6 +9,7 @@ import '../screens/activity_manager_screen.dart';
 import '../screens/create_game_screen.dart';
 import '../screens/diagnostics_screen.dart';
 import '../screens/game_settings_screen.dart';
+import '../screens/geo_activity_map_screen.dart';
 import '../screens/grading_screen.dart';
 import '../screens/login_screen.dart';
 import '../screens/logout_screen.dart';
@@ -140,6 +141,12 @@ GoRouter createRouter(AuthState authState, PowerSyncDatabase db) {
         redirect: adminOnly,
         builder: (BuildContext context, GoRouterState state) =>
             const UsersScreen(),
+      ),
+      GoRoute(
+        path: Routes.geoMap,
+        redirect: adminOnly,
+        builder: (BuildContext context, GoRouterState state) =>
+            GeoActivityMapScreen(db: db),
       ),
       GoRoute(
         path: Routes.scoreboard,

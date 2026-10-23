@@ -9,6 +9,13 @@ class LocationUnavailableException implements Exception {
   final String message;
 }
 
+/// Checks whether device-level location services are enabled.
+///
+/// Takes no parameters. Returns whether the platform reports location services
+/// as enabled. Throws if the platform cannot provide the service state.
+Future<bool> isLocationServiceEnabled() =>
+    Geolocator.isLocationServiceEnabled();
+
 /// Reads the current position of the device.
 ///
 /// Asks for permission if needed. Browsers only allow this on HTTPS (or

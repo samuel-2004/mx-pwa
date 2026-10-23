@@ -6,6 +6,7 @@ class Routes {
   static const String createGame = '/create-game';
   static const String logout = '/logout';
   static const String activities = '/activities';
+  static const String geoMap = '/geo-map';
   static const String grading = '/grading';
   static const String users = '/users';
   static const String scoreboard = '/scoreboard';
