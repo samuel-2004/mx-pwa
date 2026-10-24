@@ -7,6 +7,7 @@ import '../data/admin_api.dart';
 import '../layout/app_scaffold.dart';
 import '../orient_ui/button.dart';
 import '../orient_ui/info_banner.dart';
+import '../orient_ui/card_box.dart';
 import '../router/routes.dart';
 
 /// Creates a game and its first admin, then signs that admin in.
@@ -76,86 +77,104 @@ class _CreateGameScreenState extends State<CreateGameScreen> {
     });
   }
 
-  @override
+    @override
   Widget build(BuildContext context) {
     return ScrollAwareScaffold(
       title: 'Create a game',
-      body: Form(
-        key: _formKey,
-        child: ListView(
-          padding: const EdgeInsets.all(16),
-          children: <Widget>[
-            PageContent(
-              maxWidth: 400,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: <Widget>[
-                  TextFormField(
-                    controller: _gameName,
-                    decoration: const InputDecoration(labelText: 'Game name'),
-                    validator: validateGameName,
-                    textInputAction: TextInputAction.next,
-                  ),
-                  TextFormField(
-                    controller: _gameCode,
-                    decoration: const InputDecoration(
-                      labelText: 'Game code',
-                      helperText: 'Players need this to sign in.',
-                    ),
-                    validator: validateGameCode,
-                    textInputAction: TextInputAction.next,
-                  ),
-                  TextFormField(
-                    controller: _username,
-                    decoration:
-                        const InputDecoration(labelText: 'Admin username'),
-                    validator: validateUsername,
-                    textInputAction: TextInputAction.next,
-                  ),
-                  TextFormField(
-                    controller: _password,
-                    decoration:
-                        const InputDecoration(labelText: 'Admin password'),
-                    obscureText: true,
-                    validator: validatePassword,
-                    textInputAction: TextInputAction.next,
-                  ),
-                  TextFormField(
-                    controller: _confirm,
-                    decoration:
-                        const InputDecoration(labelText: 'Confirm password'),
-                    obscureText: true,
-                    validator: (String? value) => value == _password.text
-                        ? null
-                        : 'Passwords do not match.',
-                    textInputAction: TextInputAction.done,
-                    onFieldSubmitted: (String _) => _submit(),
-                  ),
-                  if (_error != null)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 12),
-                      child: InfoBanner(
-                        title: _error!,
-                        variant: InfoBannerVariant.error,
+      body: LayoutBuilder(
+        builder: (BuildContext context, BoxConstraints constraints) {
+          return SingleChildScrollView(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(minHeight: constraints.maxHeight),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Center(
+                  child: PageContent(
+                    maxWidth: 400,
+                    child: CardBox(
+                      padding: const EdgeInsets.all(24),
+                      child: Form(
+                        key: _formKey,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: <Widget>[
+                            TextFormField(
+                              controller: _gameName,
+                              decoration:
+                                  const InputDecoration(labelText: 'Game name'),
+                              validator: validateGameName,
+                              textInputAction: TextInputAction.next,
+                            ),
+                            TextFormField(
+                              controller: _gameCode,
+                              decoration: const InputDecoration(
+                                labelText: 'Game code',
+                                helperText: 'Players need this to sign in.',
+                              ),
+                              validator: validateGameCode,
+                              textInputAction: TextInputAction.next,
+                            ),
+                            TextFormField(
+                              controller: _username,
+                              decoration: const InputDecoration(
+                                labelText: 'Admin username',
+                              ),
+                              validator: validateUsername,
+                              textInputAction: TextInputAction.next,
+                            ),
+                            TextFormField(
+                              controller: _password,
+                              decoration: const InputDecoration(
+                                labelText: 'Admin password',
+                              ),
+                              obscureText: true,
+                              validator: validatePassword,
+                              textInputAction: TextInputAction.next,
+                            ),
+                            TextFormField(
+                              controller: _confirm,
+                              decoration: const InputDecoration(
+                                labelText: 'Confirm password',
+                              ),
+                              obscureText: true,
+                              validator: (String? value) =>
+                                  value == _password.text
+                                      ? null
+                                      : 'Passwords do not match.',
+                              textInputAction: TextInputAction.done,
+                              onFieldSubmitted: (String _) => _submit(),
+                            ),
+                            if (_error != null)
+                              Padding(
+                                padding: const EdgeInsets.only(top: 12),
+                                child: InfoBanner(
+                                  title: _error!,
+                                  variant: InfoBannerVariant.error,
+                                ),
+                              ),
+                            const SizedBox(height: 16),
+                            Button(
+                              label: 'CREATE GAME',
+                              loading: _busy,
+                              fontWeight: FontWeight.bold,
+                              onPressed: _submit,
+                            ),
+                            const SizedBox(height: 8),
+                            Button(
+                              label: 'Back to sign in',
+                              variant: ButtonVariant.link,
+                              onPressed: () => context.go(Routes.login),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                  const SizedBox(height: 16),
-                  Button(
-                    label: 'Create game',
-                    loading: _busy,
-                    onPressed: _submit,
                   ),
-                  const SizedBox(height: 8),
-                  Button(
-                    label: 'Back to sign in',
-                    variant: ButtonVariant.link,
-                    onPressed: () => context.go(Routes.login),
-                  ),
-                ],
+                ),
               ),
             ),
-          ],
-        ),
+          );
+        },
       ),
     );
   }
