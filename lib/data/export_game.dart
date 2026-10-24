@@ -91,7 +91,7 @@ class ExportActivity {
 
   /// One line per activity: subsection, activity, description, points.
   Uint8List _exportCSV(ExportData data) {
-    final List<String> lines = <String>['Subsection,Activity,Description,Points'];
+    final List<String> lines = <String>['Activity Section,Activity,Description,Points'];
     for (final ExportSubsection subsection in data.subsections) {
       for (final ExportActivityItem activity in subsection.activities) {
         lines.add(

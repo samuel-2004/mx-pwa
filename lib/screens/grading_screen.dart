@@ -156,7 +156,7 @@ class _GradingScreenState extends State<GradingScreen> {
                   SizedBox(
                     width: fieldWidth,
                     child: Picker<String>(
-                      label: 'Subsection',
+                      label: 'Activity Section',
                       value: _subsectionFilter,
                       items: <String>[_allSubsections, ...subsections],
                       itemLabel: (String value) => value.isEmpty

@@ -28,7 +28,7 @@ enum _UserAction { resetPassword, subsections, remove }
 enum _UserTypeFilter {
   all('All types'),
   admin('Admin'),
-  subsectionAdmin('Subsection admin'),
+  subsectionAdmin('Activity admin'),
   user('Player');
 
   const _UserTypeFilter(this.label);
@@ -143,7 +143,7 @@ class _UsersScreenState extends State<UsersScreen> {
         unawaited(
           showFormPopup(
             context: context,
-            title: 'Subsections for ${user.username}',
+            title: 'Activity sections for ${user.username}',
             child: _SubsectionsForm(
               subsections: directory.subsections,
               selected: user.subsectionIds.toSet(),
@@ -153,7 +153,7 @@ class _UsersScreenState extends State<UsersScreen> {
                     userId: user.id,
                     subsectionIds: chosen.toList(),
                   ),
-                  'Subsections updated.',
+                  'Activity sections updated.',
                 ),
               ),
             ),
@@ -368,14 +368,14 @@ class _SubsectionsFormState extends State<_SubsectionsForm> {
     return FormPopupLayout(
       body: none
           ? const Text(
-              'There are no subsections yet. Create them on the Activities page.',
+              'There are no activity sections yet. Create them on the Activities page.',
             )
           : Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               spacing: 8,
               children: <Widget>[
                 Text(
-                  'They can grade answers in the ticked subsections.',
+                  'They can grade answers in the ticked activity sections.',
                   style: context.typography.bodySmall,
                 ),
                 for (final SubsectionRef s in widget.subsections)

@@ -16,7 +16,7 @@ const int _maxNameLength = 200;
 const int _maxPoints = 1000000;
 const int _maxLegacyPointsLength = 80;
 const List<String> _csvHeader = <String>[
-  'subsection',
+  'activity section',
   'activity',
   'description',
   'points',
@@ -248,7 +248,7 @@ void _readCsv(String text, _Collector collector) {
   final List<List<String>> rows = _parseCsv(text);
   if (rows.isEmpty || !_isCsvHeader(rows.first)) {
     throw const ImportFormatException(
-      'Expected the header Subsection,Activity,Description,Points.',
+      'Expected the header Activity Section,Activity,Description,Points.',
     );
   }
   for (final List<String> row in rows.skip(1)) {
@@ -545,7 +545,7 @@ void _readMarkdown(String text, _Collector collector) {
     }
     if (name == null) {
       if (line.isEmpty) continue;
-      throw const ImportFormatException('Expected a "# Subsection" heading.');
+      throw const ImportFormatException('Expected a "# Activity Section" heading.');
     }
     if (!line.startsWith('|')) {
       if (tableRows == 0) description.add(raw.trimRight());

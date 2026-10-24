@@ -38,7 +38,6 @@ import '../router/routes.dart';
 import '../widgets/activity_card.dart';
 import '../widgets/answer_type_picker.dart';
 import '../widgets/loading_spinner.dart';
-import '../widgets/options_editor.dart';
 import '../widgets/popups.dart';
 import '../widgets/signed_integer_input_formatter.dart';
 import '../widgets/surface_card.dart';
@@ -90,12 +89,10 @@ class _BulkResult {
   const _BulkResult({
     required this.draft,
     required this.count,
-    this.subsectionName,
   });
 
   final ActivityDraft draft;
   final int count;
-  final String? subsectionName;
 }
 
 /// Admin page to build the game: collapsible subsections of numbered
@@ -187,16 +184,14 @@ class _ManagerPageState extends State<_ManagerPage> {
 
   // Popup.show cannot return a value, so the form reports through onSubmit.
   void _askBulk({
-    required bool newSubsection,
     required bool allowResubmission,
     required void Function(_BulkResult result) onSubmit,
   }) {
     unawaited(
       showFormPopup(
         context: context,
-        title: newSubsection ? 'New subsection' : 'Add several',
+        title: 'Add several',
         child: _BulkForm(
-          newSubsection: newSubsection,
           allowResubmission: allowResubmission,
           onSubmit: onSubmit,
         ),
@@ -229,7 +224,6 @@ class _ManagerPageState extends State<_ManagerPage> {
 
   void _addSeveral(String subsectionId, {required bool allowResubmission}) {
     _askBulk(
-      newSubsection: false,
       allowResubmission: allowResubmission,
       onSubmit: (_BulkResult result) => unawaited(
         _run(
@@ -244,26 +238,27 @@ class _ManagerPageState extends State<_ManagerPage> {
     );
   }
 
-  void _newSubsection({required bool allowResubmission}) {
-    _askBulk(
-      newSubsection: true,
-      allowResubmission: allowResubmission,
-      onSubmit: (_BulkResult result) {
-        final String? name = result.subsectionName;
-        if (name == null) return;
-        unawaited(
-          _run(
-            () async {
-              await createSubsection(
-                widget.db,
-                gameId: widget.gameId,
-                name: name,
-                drafts: numberedDrafts(result.draft, result.count),
-              );
-            },
+  void _newSubsection() {
+    unawaited(
+      showFormPopup(
+        context: context,
+        title: 'New Activity Section',
+        child: _NameForm(
+          initial: '',
+          label: 'Activity section name',
+          onSubmit: (String name) => unawaited(
+            _run(
+              () async {
+                await createSubsection(
+                  widget.db,
+                  gameId: widget.gameId,
+                  name: name,
+                );
+              },
+            ),
           ),
-        );
-      },
+        ),
+      ),
     );
   }
 
@@ -286,7 +281,7 @@ class _ManagerPageState extends State<_ManagerPage> {
     unawaited(
       showFormPopup(
         context: context,
-        title: 'Rename subsection',
+        title: 'Rename section',
         child: _NameForm(
           initial: subsection.name,
           onSubmit: (String name) => unawaited(
@@ -309,7 +304,7 @@ class _ManagerPageState extends State<_ManagerPage> {
         context: context,
         title: 'Delete "${subsection.name}"?',
         description:
-            'This removes the subsection and all its activities. '
+            'This removes the activity section and all its activities. '
             'Existing answers are kept.',
         confirmLabel: 'Delete',
         cancelLabel: 'Cancel',
@@ -363,8 +358,8 @@ class _ManagerPageState extends State<_ManagerPage> {
   ) {
     if (subsections.isEmpty) {
       return const EmptyState(
-        title: 'No subsections yet.',
-        description: 'Create one to start adding activities.',
+        title: 'No activities yet.',
+        description: 'Create an activity section to start adding activities.',
       );
     }
     final Map<String, List<ManagedActivity>> grouped =
@@ -495,7 +490,7 @@ class _ManagerPageState extends State<_ManagerPage> {
     if (!saved || !mounted) return;
     Toast.show(
       context: context,
-      message: 'Imported ${subsections.length} subsection(s).',
+      message: 'Imported ${subsections.length} activity section(s).',
     );
   }
 
@@ -508,7 +503,7 @@ class _ManagerPageState extends State<_ManagerPage> {
       onSelected: (_ManagerAction action) {
         switch (action) {
           case _ManagerAction.newSubsection:
-            _newSubsection(allowResubmission: allowResubmission);
+            _newSubsection();
           case _ManagerAction.export:
             _export();
           case _ManagerAction.import:
@@ -526,7 +521,7 @@ class _ManagerPageState extends State<_ManagerPage> {
             children: <Widget>[
               Icon(Icons.create_new_folder_outlined),
               SizedBox(width: 12),
-              Text('New subsection'),
+              Text('New Activity Section'),
             ],
           ),
         ),
@@ -582,10 +577,10 @@ class _ManagerPageState extends State<_ManagerPage> {
             spacing: 12,
             children: <Widget>[
               Button.small(
-                label: 'New subsection',
+                label: 'New Activity Section',
                 icon: const Icon(Icons.create_new_folder_outlined),
                 onPressed: () =>
-                    _newSubsection(allowResubmission: allowResubmission),
+                    _newSubsection(),
               ),
               Button.small(
                 label: 'Export',
@@ -778,15 +773,13 @@ class _SectionTile extends StatelessWidget {
   }
 }
 
-/// Creates several similar activities, optionally inside a new subsection.
+/// Creates several similar activities inside an existing subsection.
 class _BulkForm extends StatefulWidget {
   const _BulkForm({
-    required this.newSubsection,
     required this.allowResubmission,
     required this.onSubmit,
   });
 
-  final bool newSubsection;
   final bool allowResubmission;
   final void Function(_BulkResult result) onSubmit;
 
@@ -796,27 +789,24 @@ class _BulkForm extends StatefulWidget {
 
 class _BulkFormState extends State<_BulkForm> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-  final TextEditingController _subsection = TextEditingController();
   final TextEditingController _prefix = TextEditingController(text: 'Question');
-  late final TextEditingController _count =
-      TextEditingController(text: widget.newSubsection ? '0' : '10');
+  final TextEditingController _count = TextEditingController(text: '10');
+  final TextEditingController _optionCount = TextEditingController(text: '2');
   final TextEditingController _points = TextEditingController();
   final TextEditingController _offset = TextEditingController(text: '0');
   Set<AnswerType> _types = <AnswerType>{AnswerType.shortAnswer};
-  List<String> _options = <String>[];
   bool _multiple = false;
   bool _canResubmit = true;
   GeoMode _geoMode = GeoMode.manual;
-  String? _optionsError;
   String? _typesError;
 
   int get _countValue => int.tryParse(_count.text.trim()) ?? 0;
 
   @override
   void dispose() {
-    _subsection.dispose();
     _prefix.dispose();
     _count.dispose();
+    _optionCount.dispose();
     _points.dispose();
     _offset.dispose();
     super.dispose();
@@ -837,19 +827,15 @@ class _BulkFormState extends State<_BulkForm> {
       return;
     }
     final bool isChoice = _types.contains(AnswerType.multipleChoice);
-    final List<String> options = cleanOptions(_options);
-    // Options only matter if activities are actually being created.
-    final String? error = isChoice && _countValue > 0
-        ? validateChoiceOptions(options)
-        : null;
-    if (error != null) {
-      setState(() => _optionsError = error);
-      return;
-    }
+    final int optionCount = int.tryParse(_optionCount.text.trim()) ?? 2;
+    final List<String> options = isChoice
+        ? <String>[
+            for (int i = 1; i <= optionCount; i++) 'Option $i',
+          ]
+        : const <String>[];
     final String pointsText = _points.text.trim();
     final String offsetText = _offset.text.trim();
     final _BulkResult result = _BulkResult(
-      subsectionName: widget.newSubsection ? _subsection.text.trim() : null,
       count: _countValue,
       draft: (
         name: _prefix.text.trim(),
@@ -881,25 +867,16 @@ class _BulkFormState extends State<_BulkForm> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
-            if (widget.newSubsection)
-              TextFormField(
-                controller: _subsection,
-                decoration: const InputDecoration(labelText: 'Subsection name'),
-                validator: validateSubsectionName,
-                textInputAction: TextInputAction.next,
-              ),
             TextFormField(
               controller: _count,
-              decoration: InputDecoration(
+              decoration: const InputDecoration(
                 labelText: 'How many activities',
-                helperText:
-                    widget.newSubsection ? 'Use 0 for an empty subsection.' : null,
               ),
               keyboardType: TextInputType.number,
               inputFormatters: digits,
               validator: (String? v) => validateRequiredCount(
                 v,
-                min: widget.newSubsection ? 0 : 1,
+                min: 1,
                 max: _maxBulkCount,
               ),
               onChanged: (String _) => setState(() {}),
@@ -910,15 +887,20 @@ class _BulkFormState extends State<_BulkForm> {
                 labelText: 'Name prefix',
                 helperText: 'Numbered for you: "Question 1", "Question 2"...',
               ),
-              // An empty subsection needs no activity name.
-              validator: (String? v) => _countValue == 0
-                  ? null
-                  : validateActivityName(v, maxLength: _maxPrefixLength),
+              validator: (String? v) =>
+                  validateActivityName(v, maxLength: _maxPrefixLength),
             ),
             Padding(
-              padding: const EdgeInsets.only(top: 16, bottom: 8),
+              padding: const EdgeInsets.only(top: 16, bottom: 4),
               child: Text(
-                'Answer types',
+                'These defaults apply to each activity and can be changed later.',
+                style: context.typography.bodySmall.muted(context),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.only(top: 8, bottom: 8),
+              child: Text(
+                'Default answer types',
                 style: context.typography.body.w600,
               ),
             ),
@@ -940,7 +922,7 @@ class _BulkFormState extends State<_BulkForm> {
             if (_types.contains(AnswerType.geo)) ...<Widget>[
               const SizedBox(height: 12),
               Picker<GeoMode>(
-                label: 'How the location is collected',
+                label: 'Default location collection',
                 value: _geoMode,
                 items: GeoMode.values,
                 itemLabel: (GeoMode mode) => mode.label,
@@ -957,28 +939,30 @@ class _BulkFormState extends State<_BulkForm> {
             ],
             if (_types.contains(AnswerType.multipleChoice)) ...<Widget>[
               const SizedBox(height: 12),
-              OptionsEditor(
-                initial: _options,
-                onChanged: (List<String> options) => _options = options,
+              TextFormField(
+                controller: _optionCount,
+                decoration: const InputDecoration(
+                  labelText: 'Default number of options',
+                  helperText: 'Generated as Option 1, Option 2, etc.',
+                ),
+                keyboardType: TextInputType.number,
+                inputFormatters: digits,
+                validator: (String? value) => validateRequiredCount(
+                  value,
+                  min: 2,
+                  max: 20,
+                ),
               ),
               ToggleTile(
-                title: 'Allow more than one answer',
+                title: 'Allow more than one answer by default',
                 value: _multiple,
                 onChanged: (bool v) => setState(() => _multiple = v),
               ),
-              if (_optionsError != null)
-                Padding(
-                  padding: const EdgeInsets.only(top: 8),
-                  child: InfoBanner(
-                    title: _optionsError!,
-                    variant: InfoBannerVariant.error,
-                  ),
-                ),
             ],
             TextFormField(
               controller: _points,
               decoration: const InputDecoration(
-                labelText: 'Points each',
+                labelText: 'Default points',
                 helperText: 'Optional.',
               ),
               keyboardType: const TextInputType.numberWithOptions(
@@ -993,7 +977,7 @@ class _BulkFormState extends State<_BulkForm> {
             TextFormField(
               controller: _offset,
               decoration: const InputDecoration(
-                labelText: 'Opens after (minutes)',
+                labelText: 'Default opening time (minutes)',
                 helperText: 'Minutes after the game starts. 0 is immediate.',
               ),
               keyboardType: TextInputType.number,
@@ -1003,7 +987,7 @@ class _BulkFormState extends State<_BulkForm> {
             ),
             if (widget.allowResubmission)
               ToggleTile(
-                title: 'Allow resubmission',
+                title: 'Allow resubmission by default',
                 value: _canResubmit,
                 onChanged: (bool value) =>
                     setState(() => _canResubmit = value),
@@ -1024,10 +1008,15 @@ class _BulkFormState extends State<_BulkForm> {
 }
 
 class _NameForm extends StatefulWidget {
-  const _NameForm({required this.initial, required this.onSubmit});
+  const _NameForm({
+    required this.initial,
+    required this.onSubmit,
+    this.label = 'Name',
+  });
 
   final String initial;
   final void Function(String name) onSubmit;
+  final String label;
 
   @override
   State<_NameForm> createState() => _NameFormState();
@@ -1058,7 +1047,7 @@ class _NameFormState extends State<_NameForm> {
         key: _formKey,
         child: TextFormField(
           controller: _name,
-          decoration: const InputDecoration(labelText: 'Name'),
+          decoration: InputDecoration(labelText: widget.label),
           validator: validateSubsectionName,
           autofocus: true,
           onFieldSubmitted: (String _) => _save(),
