@@ -38,15 +38,14 @@ Future<MxApp> _initialize() async {
 
   final SupabaseAuthState authState =
       SupabaseAuthState(Supabase.instance.client);
-  await authState.initialize();
 
-  final PowerSyncDatabase db = await openPowerSync(
-    authState: authState,
-    endpoint: AppConfig.powersyncUrl,
-  );
-
-  // Loaded before the first frame so the saved theme never flashes.
-  final AppSettings settings = await AppSettings.load();
+  // Independent, so they run together. openPowerSync reacts to the sign-in
+  // state when authState finishes.
+  final (PowerSyncDatabase db, AppSettings settings, _) = await (
+    openPowerSync(authState: authState, endpoint: AppConfig.powersyncUrl),
+    AppSettings.load(),
+    authState.initialize(),
+  ).wait;
 
   return MxApp(
     router: createRouter(authState, db),

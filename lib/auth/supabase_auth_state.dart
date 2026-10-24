@@ -61,19 +61,25 @@ class SupabaseAuthState extends AuthState {
     await _sync(_client.auth.currentSession);
     _subscription = _client.auth.onAuthStateChange.listen(
       (supabase.AuthState data) {
-        // Refreshes fire often and never change who the user is.
-        if (data.event == supabase.AuthChangeEvent.tokenRefreshed) return;
+        // Refreshes never change who the user is, and the initial session was
+        // already synced above.
+        if (data.event == supabase.AuthChangeEvent.tokenRefreshed ||
+            data.event == supabase.AuthChangeEvent.initialSession) {
+          return;
+        }
         unawaited(_sync(data.session));
       },
     );
 
 
     // This diagnostic is optional; auth startup must not depend on it.
-    try {
-      final Object? result = await _client.rpc('debug_auth_context');
-      if (kDebugMode) debugPrint('Auth context: $result');
-    } on Exception catch (e) {
-      if (kDebugMode) debugPrint('Auth context diagnostic failed: $e');
+    if (kDebugMode) {
+      try {
+        final Object? result = await _client.rpc('debug_auth_context');
+        debugPrint('Auth context: $result');
+      } on Exception catch (e) {
+        debugPrint('Auth context diagnostic failed: $e');
+      }
     }
   }
 
@@ -110,33 +116,38 @@ class SupabaseAuthState extends AuthState {
   }
 
   Future<void> _sync(supabase.Session? session) async {
+    final String? userId = session?.user.id;
     // Resolve roles before publishing, so guards never see a signed-in user
-    // with stale roles.
-    final _Roles roles =
-        session == null ? _noRoles : await _loadRoles(session.user.id);
-      final String? fetchedGameCode =
-        session == null ? null : await diagnoseCurrentUserGameId();
+    // with stale roles. The two lookups do not depend on each other.
+    final (_Roles roles, String? gameId) = userId == null
+        ? (_noRoles, null)
+        : await (_loadRoles(userId), diagnoseCurrentUserGameId()).wait;
     _isSignedIn = session != null;
-    _userId = session?.user.id;
+    _userId = userId;
     _roles = roles;
-    _gameCode = fetchedGameCode;
+    _gameCode = gameId;
     notifyListeners();
   }
 
   Future<_Roles> _loadRoles(String userId) async {
     try {
-      final Map<String, dynamic>? user = await _client
-          .from('users')
-          .select('is_admin, is_subsection_admin')
-          .eq('id', userId)
-          .isFilter('deleted_at', null)
-          .maybeSingle();
-      final List<Map<String, dynamic>> grants = await _client
-          .from('subsection_admins')
-          .select('subsection_id')
-          .eq('user_id', userId)
-          .isFilter('deleted_at', null)
-          .limit(1);
+      final (
+        Map<String, dynamic>? user,
+        List<Map<String, dynamic>> grants,
+      ) = await (
+        _client
+            .from('users')
+            .select('is_admin, is_subsection_admin')
+            .eq('id', userId)
+            .isFilter('deleted_at', null)
+            .maybeSingle(),
+        _client
+            .from('subsection_admins')
+            .select('subsection_id')
+            .eq('user_id', userId)
+            .isFilter('deleted_at', null)
+            .limit(1),
+      ).wait;
 
       // postgresql sanity check
       bool isTrue(dynamic value) {
@@ -147,7 +158,9 @@ class SupabaseAuthState extends AuthState {
         isAdmin: user != null && (isTrue(user['is_admin'])),
         isSubsectionAdmin: grants.isNotEmpty,
       );
-    } on Exception catch (e) {
+    // wait() reports failures as a ParallelWaitError, not the original
+    // exception, so catch Object to keep failing closed.
+    } on Object catch (e) {
       // Fail closed: an unreadable role must never grant admin UI.
       debugPrint('Failed to load roles for $userId: $e');
       return _noRoles;
@@ -155,7 +168,7 @@ class SupabaseAuthState extends AuthState {
   }
 
 
-    /// Calls the PostgreSQL [is_game_admin] function for the current user.
+  /// Calls the PostgreSQL [is_game_admin] function for the current user.
   Future<bool> diagnoseIsGameAdmin() async {
     try {
       final dynamic result = await _client.rpc('is_game_admin');
