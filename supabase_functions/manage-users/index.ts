@@ -8,6 +8,46 @@ import {
 
 type Row = Record<string, any>;
 
+/**
+ * Retires Auth access while preserving the public user row and linked history.
+ * @param admin Service-role Supabase client.
+ * @param userId Auth user ID to retire.
+ * @returns A server error response, or null when the user is retired.
+ * @throws If the Auth or database client throws while processing the request.
+ */
+async function retireUserAuth(
+  admin: ReturnType<typeof adminClient>,
+  userId: string,
+): Promise<Response | null> {
+  let authUpdateFailed = false;
+  let authUpdateError: unknown;
+
+  try {
+    const retired = await admin.auth.admin.updateUserById(userId, {
+      email: 'deleted+' + userId + '@deleted.invalid',
+      email_confirm: true,
+      ban_duration: '876000h',
+    });
+
+    if (retired.error) {
+      authUpdateFailed = true;
+      authUpdateError = retired.error;
+    }
+  } catch (error) {
+    authUpdateFailed = true;
+    authUpdateError = error;
+  }
+
+  // Revoke sessions even if retiring the Auth profile failed.
+  const revoked = await admin.rpc('revoke_user_sessions', {
+    p_user_id: userId,
+  });
+
+  if (revoked.error) return serverError(revoked.error);
+  if (authUpdateFailed) return serverError(authUpdateError);
+  return null;
+}
+
 Deno.serve(async (req: Request): Promise<Response> => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
@@ -212,6 +252,28 @@ Deno.serve(async (req: Request): Promise<Response> => {
 
       const gameCode = gameRes.data.game_code as string;
       const email = buildLoginEmail(username, gameCode);
+
+      // Earlier removals kept their Auth email, so retire those accounts
+      // before reusing the username and its synthetic email address.
+      const deletedUsers = await admin
+        .from('users')
+        .select('id')
+        .eq('game_id', gameId)
+        .eq('uname', username)
+        .not('deleted_at', 'is', null);
+
+      if (deletedUsers.error) {
+        return serverError(deletedUsers.error);
+      }
+
+      for (const deletedUser of deletedUsers.data as Row[]) {
+        const retirementError = await retireUserAuth(
+          admin,
+          deletedUser.id as string,
+        );
+
+        if (retirementError) return retirementError;
+      }
 
       const created = await admin.auth.admin.createUser({
         email,
@@ -442,7 +504,6 @@ Deno.serve(async (req: Request): Promise<Response> => {
         .from('users')
         .select('id, game_id, is_admin')
         .eq('id', userId)
-        .is('deleted_at', null)
         .maybeSingle();
 
       if (target.error) {
@@ -465,7 +526,8 @@ Deno.serve(async (req: Request): Promise<Response> => {
           deleted_at: new Date().toISOString(),
         })
         .eq('id', userId)
-        .eq('game_id', gameId);
+        .eq('game_id', gameId)
+        .is('deleted_at', null);
 
       if (removed.error) {
         return serverError(removed.error);
@@ -481,19 +543,10 @@ Deno.serve(async (req: Request): Promise<Response> => {
         return serverError(grantsRemoved.error);
       }
 
-      /*
-       * Disable the Auth account.
-       *
-       * The public.users row remains as a soft-deleted record, but the
-       * participant can no longer sign in.
-       */
-      const banned = await admin.auth.admin.updateUserById(userId, {
-        ban_duration: '876000h',
-      });
-
-      if (banned.error) {
-        return serverError(banned.error);
-      }
+      // Preserve the Auth row because deleting it cascades through answer
+      // history, but revoke its refresh sessions and free its old email.
+      const retirementError = await retireUserAuth(admin, userId);
+      if (retirementError) return retirementError;
 
       return json(200, { ok: true });
     }
