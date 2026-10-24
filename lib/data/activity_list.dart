@@ -1,7 +1,8 @@
 import 'package:powersync/powersync.dart' show PowerSyncDatabase;
 
 import 'activity_writes.dart' show AnswerSchema;
-import 'activity_notes.dart' show ActivityTag, parseTags;
+import 'activity_notes.dart'
+    show ActivityTag, NotePin, notePinFromColumns, parseTags;
 import 'game_options.dart'
     show
         adminOnlySubmissionSubsections,
@@ -26,6 +27,8 @@ class ActivityListItem {
     required this.latestPoints,
     required this.tags,
     required this.suburb,
+    required this.location,
+    required this.pin,
   });
 
   final String id;
@@ -48,6 +51,12 @@ class ActivityListItem {
   final List<ActivityTag> tags;
   /// The suburb of the caller's pin on this activity, or null.
   final String? suburb;
+
+  /// Where the activity is, if the admin set one. Shown on the player map.
+  final NotePin? location;
+
+  /// The caller's own pin on this activity, or null.
+  final NotePin? pin;
 
   /// Returns the release time if it is still in the future at [now], else
   /// null (already open or never gated).
@@ -94,10 +103,16 @@ SELECT
   ) AS tags,
   (SELECT n.suburb FROM user_activity_notes n
     WHERE n.activity_id = a.id AND n.user_id = ?
-  ) AS suburb
+  ) AS suburb,
+  a.location_lat AS location_lat,
+  a.location_lng AS location_lng,
+  un.lat AS pin_lat,
+  un.lng AS pin_lng
 FROM activities a
 LEFT JOIN subsections s ON s.id = a.subsection_id AND s.deleted_at IS NULL
 LEFT JOIN games g ON g.id = a.game_id
+LEFT JOIN user_activity_notes un
+  ON un.activity_id = a.id AND un.user_id = ?
 WHERE a.game_id = (
     SELECT game_id FROM users WHERE id = ? AND deleted_at IS NULL LIMIT 1
   )
@@ -120,7 +135,7 @@ Stream<List<ActivityListItem>> watchActivities(
   return db
       .watch(
         _activitiesSql,
-        parameters: <Object?>[userId, userId, userId, userId, userId],
+        parameters: <Object?>[userId, userId, userId, userId, userId, userId],
       )
       .map((results) {
     return <ActivityListItem>[
@@ -150,6 +165,8 @@ Stream<List<ActivityListItem>> watchActivities(
             latestPoints: row['latest_points'] as int?,
             tags: parseTags(row['tags'] as String?),
             suburb: row['suburb'] as String?,
+            location: notePinFromColumns(row['location_lat'], row['location_lng']),
+            pin: notePinFromColumns(row['pin_lat'], row['pin_lng']),
           ),
     ];
   });

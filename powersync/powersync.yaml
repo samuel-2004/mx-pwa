@@ -56,7 +56,9 @@ streams:
             can_resubmit,
             release_time_offset_minutes,
             activity_order,
-            points
+            points,
+            location_lat,
+            location_lng
         FROM activities
         WHERE game_id IN (SELECT game_id FROM users_game)
           AND false IN (

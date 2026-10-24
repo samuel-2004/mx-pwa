@@ -13,6 +13,8 @@ import '../orient_ui/button.dart';
 import '../orient_ui/info_banner.dart';
 import '../orient_ui/picker.dart';
 import '../orient_ui/toggle_tile.dart';
+import '../data/activity_notes.dart' show NotePin;
+import 'activity_location_editor.dart';
 import 'answer_type_picker.dart';
 import 'auto_save_field.dart';
 import 'geo_solution_editor.dart';
@@ -74,6 +76,7 @@ class _ActivityCardState extends State<ActivityCard> {
   bool _loadingSolution = false;
   // Bumped when a solution loads, so the editor restarts from it.
   int _solutionEpoch = 0;
+  NotePin? _location;
 
   @override
   void dispose() {
@@ -135,6 +138,7 @@ class _ActivityCardState extends State<ActivityCard> {
     _solutionInputError = null;
     _solutionLoadError = null;
     _solutionLoaded = false;
+    _location = a.location;
   }
 
   // Why a location configuration cannot be saved yet, or null.
@@ -202,6 +206,7 @@ class _ActivityCardState extends State<ActivityCard> {
         ),
         releaseOffsetMinutes: int.tryParse(_offset.text.trim()) ?? 0,
         canResubmit: widget.allowResubmission && _canResubmit,
+        location: _location,
       ),
     );
     if (saved && mounted) setState(() => _expanded = false);
@@ -387,6 +392,12 @@ class _ActivityCardState extends State<ActivityCard> {
             const SizedBox(height: 12),
             _geoSection(),
           ],
+          const SizedBox(height: 12),
+          ActivityLocationEditor(
+            value: _location,
+            onChanged: (NotePin? location) =>
+                setState(() => _location = location),
+          ),
           const SizedBox(height: 12),
           TextField(
             controller: _offset,

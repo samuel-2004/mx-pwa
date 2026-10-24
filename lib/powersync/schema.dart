@@ -43,7 +43,9 @@ const Schema schema = Schema(<Table>[
     Column.integer('points'),
     Column.text('updated_at'),
     Column.text('deleted_at'),
-    Column.text('desc')
+    Column.text('desc'),
+    Column.real('location_lat'),
+    Column.real('location_lng')
   ]),
   Table('games', [
     Column.text('game_code'),

@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:powersync/powersync.dart' show PowerSyncDatabase;
+import 'activity_notes.dart' show NotePin;
 
 /// The kinds of answer an activity can ask for. Declared in the order they
 /// appear on the answer form.
@@ -399,20 +400,29 @@ Future<void> setActivityDescription(
 Future<void> setActivityPoints(PowerSyncDatabase db, String id, int? points) =>
     _updateActivity(db, id, 'points = ?', <Object?>[points]);
 
-/// Sets the answer type, release offset and resubmission rule of activity
-/// [id]. Throws if the local write fails.
+/// Sets the answer type, release offset, resubmission rule and location of
+/// activity [id]. [location] must already be valid (see `normalisePin`); null
+/// clears it. Throws if the local write fails.
 Future<void> updateActivityDetails(
   PowerSyncDatabase db, {
   required String id,
   required AnswerSchema schema,
   required int releaseOffsetMinutes,
   required bool canResubmit,
+  required NotePin? location,
 }) =>
     _updateActivity(
       db,
       id,
-      'answer_schema = ?, release_time_offset_minutes = ?, can_resubmit = ?',
-      <Object?>[schema.toJson(), releaseOffsetMinutes, canResubmit ? 1 : 0],
+      'answer_schema = ?, release_time_offset_minutes = ?, can_resubmit = ?, '
+      'location_lat = ?, location_lng = ?',
+      <Object?>[
+        schema.toJson(),
+        releaseOffsetMinutes,
+        canResubmit ? 1 : 0,
+        location?.lat,
+        location?.lng,
+      ],
     );
 
 /// Soft-deletes activity [id], so existing answers keep their reference.

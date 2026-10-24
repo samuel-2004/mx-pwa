@@ -1,6 +1,7 @@
 import 'package:powersync/powersync.dart' show PowerSyncDatabase;
 
 import 'activity_writes.dart';
+import 'activity_notes.dart' show NotePin, notePinFromColumns;
 
 /// A subsection as shown in the activity manager.
 /// A subsection as shown in the activity manager.
@@ -52,6 +53,7 @@ class ManagedActivity {
     required this.points,
     required this.releaseOffsetMinutes,
     required this.canResubmit,
+    required this.location,
   });
 
   final String id;
@@ -64,6 +66,7 @@ class ManagedActivity {
   final int? points;
   final int releaseOffsetMinutes;
   final bool canResubmit;
+  final NotePin? location;
 }
 
 /// Watches [gameId]'s live activities in list order from the local database.
@@ -77,7 +80,7 @@ Stream<List<ManagedActivity>> watchManagedActivities(
   return db
       .watch(
         'SELECT id, subsection_id, name, "desc" AS description, '
-        'answer_schema, points, release_time_offset_minutes, can_resubmit '
+        'answer_schema, points, release_time_offset_minutes, can_resubmit, location_lat, location_lng '
         'FROM activities '
         'WHERE game_id = ? AND deleted_at IS NULL '
         'ORDER BY activity_order, name',
@@ -95,6 +98,10 @@ Stream<List<ManagedActivity>> watchManagedActivities(
                 releaseOffsetMinutes:
                     (row['release_time_offset_minutes'] as int?) ?? 0,
                 canResubmit: row['can_resubmit'] == 1,
+                location: notePinFromColumns(
+                  row['location_lat'],
+                  row['location_lng'],
+                ),
               ),
           ]);
 }

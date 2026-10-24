@@ -11,10 +11,12 @@ import '../layout/app_scaffold.dart';
 import '../orient_ui/button.dart';
 import '../orient_ui/empty_state.dart';
 import '../orient_ui/style.dart';
+import '../orient_ui/tag.dart';
+import '../orient_ui/tappable_icon.dart';
 import '../router/routes.dart';
 import '../widgets/loading_spinner.dart';
 import '../widgets/surface_card.dart';
-import '../orient_ui/tag.dart';
+import '../widgets/activity_map.dart';
 
 String _formatLocal(DateTime utc) {
   final DateTime t = utc.toLocal();
@@ -37,6 +39,7 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
   Stream<List<ActivityListItem>>? _activities;
   String? _userId;
   Timer? _clock;
+  bool _showMap = false;
 
   @override
   void initState() {
@@ -90,6 +93,12 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
           if (!snap.hasData) return const LoadingSpinner();
           final List<ActivityListItem> items = snap.requireData;
           if (items.isEmpty) return _EmptyState(db: widget.db, isAdmin: isAdmin);
+          if (_showMap) {
+            return ActivityMap(
+              items: items,
+              canViewOutsideGameWindow: canViewOutsideGameWindow,
+            );
+          }
           return _ActivityList(
             items: items,
             isAdmin: isAdmin,
@@ -97,6 +106,13 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
           );
         },
       ),
+      actions: <Widget>[
+        TappableIcon(
+          icon: Icon(_showMap ? Icons.list_alt : Icons.map_outlined),
+          tooltip: _showMap ? 'Show list' : 'Show map',
+          onPressed: () => setState(() => _showMap = !_showMap),
+        ),
+      ],
     );
   }
 }

@@ -317,8 +317,7 @@ Future<void> setActivityPin(
   required String activityId,
   required NotePin? pin,
 }) async {
-  final NotePin? wrapped =
-      pin == null ? null : (lat: pin.lat, lng: (pin.lng + 180) % 360 - 180);
+  final NotePin? wrapped = pin == null ? null : normalisePin(pin);
   if (wrapped != null && !isValidLatLng(wrapped.lat, wrapped.lng)) {
     throw ArgumentError('Not a valid position.');
   }
@@ -337,4 +336,28 @@ Future<void> setActivityPin(
       },
     },
   );
+}
+
+/// Reads a point from two nullable database columns.
+///
+/// [lat] and [lng] are the raw column values. Returns the point, or null
+/// unless both are numbers inside the valid ranges. Does not throw.
+NotePin? notePinFromColumns(Object? lat, Object? lng) {
+  if (lat is! num || lng is! num) return null;
+  final double latitude = lat.toDouble();
+  final double longitude = lng.toDouble();
+  if (!isValidLatLng(latitude, longitude)) return null;
+  return (lat: latitude, lng: longitude);
+}
+
+/// Wraps a longitude from a map panned past the date line into -180 to 180.
+///
+/// [pin] is the point to normalise. Returns the wrapped point. Throws
+/// [ArgumentError] if it is not a valid position.
+NotePin normalisePin(NotePin pin) {
+  final NotePin wrapped = (lat: pin.lat, lng: (pin.lng + 180) % 360 - 180);
+  if (!isValidLatLng(wrapped.lat, wrapped.lng)) {
+    throw ArgumentError('Not a valid position.');
+  }
+  return wrapped;
 }
