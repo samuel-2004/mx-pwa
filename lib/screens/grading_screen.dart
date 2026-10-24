@@ -1,4 +1,6 @@
 import 'dart:typed_data';
+import 'dart:async' show Timer;
+import 'dart:typed_data';
 
 import 'package:flutter/foundation.dart' show debugPrint, kDebugMode;
 import 'package:flutter/material.dart';
@@ -72,24 +74,34 @@ class _GradingScreenState extends State<GradingScreen> {
   final TextEditingController _usernameSearch = TextEditingController();
   final TextEditingController _activitySearch = TextEditingController();
 
+  static const Duration _pollInterval = Duration(seconds: 15);
+  Timer? _timer;
+
   @override
   void initState() {
     super.initState();
     _load();
+    // The queue is computed on the server and is not synced to the device, so
+    // new answers only appear by asking again.
+    _timer = Timer.periodic(_pollInterval, (Timer _) => _load(silent: true));
   }
 
-  Future<void> _load() async {
+  Future<void> _load({bool silent = false}) async {
+    final bool includeGraded = _includeGraded;
     try {
       final List<GradingItem> items =
-          await _api.loadQueue(includeGraded: _includeGraded);
-      if (!mounted) return;
+          await _api.loadQueue(includeGraded: includeGraded);
+      // Drop a reply for a toggle state that is no longer selected.
+      if (!mounted || includeGraded != _includeGraded) return;
       setState(() {
         _items = items;
+        _loadError = null;
         _loading = false;
       });
     } on Exception catch (e) {
       if (kDebugMode) debugPrint('Grading load failed: $e');
-      if (!mounted) return;
+      // A failed background refresh keeps showing the last good list.
+      if (!mounted || (silent && _items != null)) return;
       setState(() {
         _loadError = e;
         _loading = false;
@@ -107,6 +119,7 @@ class _GradingScreenState extends State<GradingScreen> {
 
   @override
   void dispose() {
+    _timer?.cancel();
     _usernameSearch.dispose();
     _activitySearch.dispose();
     super.dispose();
