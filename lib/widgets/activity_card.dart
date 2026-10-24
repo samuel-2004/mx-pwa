@@ -207,16 +207,6 @@ class _ActivityCardState extends State<ActivityCard> {
     if (saved && mounted) setState(() => _expanded = false);
   }
 
-  // Answer types are deliberately left out: they show only when expanded.
-  String _summary(ManagedActivity a) {
-    return <String>[
-      if (a.releaseOffsetMinutes > 0) 'opens +${a.releaseOffsetMinutes} min',
-      if (!(widget.allowResubmission && a.canResubmit)) 'one attempt',
-      if (a.schema.has(AnswerType.geo) && !a.schema.geo.ready)
-        'location: no solution (manual grading)',
-    ].join(' · ');
-  }
-
   @override
   Widget build(BuildContext context) {
     final ManagedActivity a = widget.activity;
@@ -305,11 +295,6 @@ class _ActivityCardState extends State<ActivityCard> {
                 },
               ),
             ),
-            if (!_expanded && _summary(a).isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.only(left: 40, top: 6),
-                child: Text(_summary(a), style: text.bodySmall),
-              ),
             if (_expanded) _details(),
           ],
         ),

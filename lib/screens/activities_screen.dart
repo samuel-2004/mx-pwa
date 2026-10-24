@@ -70,6 +70,7 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
         isAdmin || auth.isSubsectionAdmin;
     return AppScaffold(
       title: 'Activities',
+      fullWidthBody: true,
       floatingActionButton: isAdmin
           ? Button.small(
               label: 'New activity',
@@ -156,13 +157,19 @@ class _ActivityList extends StatelessWidget {
       if (showHeaders && itemSection != section) {
         section = itemSection;
         children.add(
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
-            child: Text(itemSection, style: context.typography.body.w600),
+          PageContent(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
+              child: Text(itemSection, style: context.typography.body.w600),
+            ),
           ),
         );
       }
-      children.add(_ActivityTile(item: item, isAdmin: isAdmin, now: now));
+      children.add(
+        PageContent(
+          child: _ActivityTile(item: item, isAdmin: isAdmin, now: now),
+        ),
+      );
     }
     // Bottom padding keeps the last row clear of the floating button.
     return ListView(

@@ -137,75 +137,80 @@ class _LoginScreenState extends State<LoginScreen> {
 
     return ScrollAwareScaffold(
       title: 'Sign in',
-      body: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 400),
-          child: ListView(
-            shrinkWrap: true,
-            padding: const EdgeInsets.all(16),
-            children: <Widget>[
-              TextField(
-                controller: _username,
-                decoration: const InputDecoration(labelText: 'Username'),
-                textInputAction: TextInputAction.next,
-              ),
-              TextField(
-                controller: _password,
-                decoration: InputDecoration(
-                  labelText: 'Password',
-                  suffixIcon: TappableIcon(
-                    icon: Icon(
-                      _showPassword ? Icons.visibility_off : Icons.visibility,
+      body: ListView(
+        padding: const EdgeInsets.all(16),
+        children: <Widget>[
+          PageContent(
+            maxWidth: 400,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: <Widget>[
+                TextField(
+                  controller: _username,
+                  decoration: const InputDecoration(labelText: 'Username'),
+                  textInputAction: TextInputAction.next,
+                ),
+                TextField(
+                  controller: _password,
+                  decoration: InputDecoration(
+                    labelText: 'Password',
+                    suffixIcon: TappableIcon(
+                      icon: Icon(
+                        _showPassword
+                            ? Icons.visibility_off
+                            : Icons.visibility,
+                      ),
+                      tooltip:
+                          _showPassword ? 'Hide password' : 'Show password',
+                      onPressed: () {
+                        setState(() {
+                          _showPassword = !_showPassword;
+                        });
+                      },
                     ),
-                    tooltip: _showPassword ? 'Hide password' : 'Show password',
-                    onPressed: () {
-                      setState(() {
-                        _showPassword = !_showPassword;
-                      });
-                    },
                   ),
+                  obscureText: !_showPassword,
+                  textInputAction: TextInputAction.next,
                 ),
-                obscureText: !_showPassword,
-                textInputAction: TextInputAction.next,
-              ),
-              TextField(
-                controller: _gameCode,
-                readOnly: isGameCodeReadOnly,
-                decoration: const InputDecoration(labelText: 'Game code'),
-                textInputAction: TextInputAction.done,
-                onSubmitted: (String _) => _submit(),
-              ),
-              if (_error != null)
-                Padding(
-                  padding: const EdgeInsets.only(top: 12),
-                  child: InfoBanner(
-                    title: _error!,
-                    variant: InfoBannerVariant.error,
+                TextField(
+                  controller: _gameCode,
+                  readOnly: isGameCodeReadOnly,
+                  decoration: const InputDecoration(labelText: 'Game code'),
+                  textInputAction: TextInputAction.done,
+                  onSubmitted: (String _) => _submit(),
+                ),
+                if (_error != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 12),
+                    child: InfoBanner(
+                      title: _error!,
+                      variant: InfoBannerVariant.error,
+                    ),
                   ),
+                const SizedBox(height: 16),
+                Button(
+                  label: 'SIGN IN',
+                  loading: _busy,
+                  fontWeight: FontWeight.bold,
+                  onPressed: _submit,
                 ),
-              const SizedBox(height: 16),
-              Button(
-                label: 'SIGN IN',
-                loading: _busy,
-                fontWeight: FontWeight.bold,
-                onPressed: _submit,
-              ),
-              const SizedBox(height: 8),
-              Button(
-                label: 'JOIN GAME',
-                variant: ButtonVariant.secondary,
-                fontWeight: FontWeight.bold,
-                onPressed: _busy ? null : _joinGame,
-              ),
-              const SizedBox(height: 8),
-              Button(
-                label: 'Create a game',
-                variant: ButtonVariant.link,
-                onPressed: () => context.go(Routes.createGame),
-              ),
-            ],
+                const SizedBox(height: 8),
+                Button(
+                  label: 'JOIN GAME',
+                  variant: ButtonVariant.secondary,
+                  fontWeight: FontWeight.bold,
+                  onPressed: _busy ? null : _joinGame,
+                ),
+                const SizedBox(height: 8),
+                Button(
+                  label: 'Create a game',
+                  variant: ButtonVariant.link,
+                  onPressed: () => context.go(Routes.createGame),
+                ),
+              ],
+            ),
           ),
-        ),
+        ],
       ),
     );
   }

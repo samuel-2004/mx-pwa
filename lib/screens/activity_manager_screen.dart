@@ -379,28 +379,30 @@ class _ManagerPageState extends State<_ManagerPage> {
       padding: EdgeInsets.only(bottom: isSmallScreen ? 16 : 176),
       children: <Widget>[
         for (final ManagedSubsection s in subsections)
-          _SectionTile(
-            subsection: s,
-            activities: grouped[s.id] ?? const <ManagedActivity>[],
-            adminOnlySubmission: adminOnlySubmissions.contains(s.id),
-            onAdminOnlySubmissionChanged: (bool enabled) => unawaited(
-              _setAdminOnlySubmissions(settings, s.id, enabled),
-            ),
-            db: widget.db,
-            run: _run,
-            onAdd: () =>
-                _addActivity(s.id, allowResubmission: allowResubmission),
-            onAddSeveral: () =>
-                _addSeveral(s.id, allowResubmission: allowResubmission),
-            onRename: () => _rename(s),
-            onDelete: () => _deleteSubsection(s),
-            onDeleteActivity: _delete,
-            onSubmitFor: _submitFor,
-            allowResubmission: allowResubmission,
-            onReorder: (int oldIndex, int newIndex) => _reorderActivities(
-              grouped[s.id] ?? const <ManagedActivity>[],
-              oldIndex,
-              newIndex,
+          PageContent(
+            child: _SectionTile(
+              subsection: s,
+              activities: grouped[s.id] ?? const <ManagedActivity>[],
+              adminOnlySubmission: adminOnlySubmissions.contains(s.id),
+              onAdminOnlySubmissionChanged: (bool enabled) => unawaited(
+                _setAdminOnlySubmissions(settings, s.id, enabled),
+              ),
+              db: widget.db,
+              run: _run,
+              onAdd: () =>
+                  _addActivity(s.id, allowResubmission: allowResubmission),
+              onAddSeveral: () =>
+                  _addSeveral(s.id, allowResubmission: allowResubmission),
+              onRename: () => _rename(s),
+              onDelete: () => _deleteSubsection(s),
+              onDeleteActivity: _delete,
+              onSubmitFor: _submitFor,
+              allowResubmission: allowResubmission,
+              onReorder: (int oldIndex, int newIndex) => _reorderActivities(
+                grouped[s.id] ?? const <ManagedActivity>[],
+                oldIndex,
+                newIndex,
+              ),
             ),
           ),
       ],
@@ -567,6 +569,7 @@ class _ManagerPageState extends State<_ManagerPage> {
             settings.get<bool>(allowResubmissionOptionKey) ?? true;
         return AppScaffold(
           title: 'Activities',
+          fullWidthBody: true,
           smallScreenAction: _smallScreenAction(allowResubmission, settings),
           floatingActionButton: Column(
             mainAxisSize: MainAxisSize.min,

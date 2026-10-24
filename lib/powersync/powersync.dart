@@ -1,7 +1,8 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart' show kIsWeb;
-import 'package:powersync/powersync.dart' show PowerSyncDatabase;
+import 'package:powersync/powersync.dart'
+    show PowerSyncDatabase, autoLogger;
 import 'package:supabase_flutter/supabase_flutter.dart'
     show AuthChangeEvent, Supabase;
 
@@ -25,8 +26,11 @@ Future<PowerSyncDatabase> openPowerSync({
     throw UnsupportedError('PowerSync is only wired up for web.');
   }
 
-  final PowerSyncDatabase db =
-      PowerSyncDatabase(schema: schema, path: _databaseFilename);
+  final PowerSyncDatabase db = PowerSyncDatabase(
+    schema: schema,
+    path: _databaseFilename,
+    logger: autoLogger,
+  );
   await db.initialize();
 
   final SupabaseConnector connector = SupabaseConnector(endpoint: endpoint);

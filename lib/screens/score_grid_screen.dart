@@ -186,7 +186,11 @@ class _ScoreGridScreenState extends State<ScoreGridScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return AppScaffold(title: 'Bulk scores', body: _body());
+    return AppScaffold(
+      title: 'Bulk scores',
+      fullWidthBody: true,
+      body: _body(),
+    );
   }
 
   Widget _body() {

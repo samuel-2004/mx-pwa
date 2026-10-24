@@ -181,6 +181,7 @@ Widget build(BuildContext context) {
 
       return AppScaffold(
         title: 'Game settings',
+        fullWidthBody: true,
         floatingActionButton: FloatingActionButton(
           heroTag: null,
           tooltip: 'Share game QR code',
@@ -201,50 +202,60 @@ Widget build(BuildContext context) {
         children: <Widget>[
           // Vertical padding only: Tile and ToggleTile bring their own, so the
           // plain fields below get a horizontal inset to line up with them.
-          SurfaceCard(
-            padding: const EdgeInsets.symmetric(vertical: 8),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: <Widget>[
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-                  child: TextFormField(
-                    controller: _name,
-                    decoration: const InputDecoration(
-                      labelText: 'Game name',
-                    ),
-                    validator: validateGameName,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                // Tile shows plain text, so the code can no longer be selected
-                // by hand; the copy button covers that.
-                Tile(
-                  title: 'Game code',
-                  subtitle: settings.gameCode.toUpperCase(),
-                  trailing: CopyButton(
-                    value: settings.gameCode,
-                    onCopied: () => Toast.show(
-                      context: context,
-                      message: 'Game code copied.',
+          PageContent(
+            child: SurfaceCard(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: <Widget>[
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                    child: TextFormField(
+                      controller: _name,
+                      decoration: const InputDecoration(
+                        labelText: 'Game name',
+                      ),
+                      validator: validateGameName,
                     ),
                   ),
-                ),
-                const Divider(),
-                ...gameOptions.map(_buildOption),
-              ],
+                  const SizedBox(height: 8),
+                  // Tile shows plain text, so the code can no longer be selected
+                  // by hand; the copy button covers that.
+                  Tile(
+                    title: 'Game code',
+                    subtitle: settings.gameCode.toUpperCase(),
+                    trailing: CopyButton(
+                      value: settings.gameCode,
+                      onCopied: () => Toast.show(
+                        context: context,
+                        message: 'Game code copied.',
+                      ),
+                    ),
+                  ),
+                  const Divider(),
+                  ...gameOptions.map(_buildOption),
+                ],
+              ),
             ),
           ),
           if (_error != null)
-            Padding(
-              padding: const EdgeInsets.only(top: 8),
-              child: InfoBanner(
-                title: _error!,
-                variant: InfoBannerVariant.error,
+            PageContent(
+              child: Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: InfoBanner(
+                  title: _error!,
+                  variant: InfoBannerVariant.error,
+                ),
               ),
             ),
           const SizedBox(height: 16),
-          Button(label: 'Save settings', loading: _busy, onPressed: _save),
+          PageContent(
+            child: Button(
+              label: 'Save settings',
+              loading: _busy,
+              onPressed: _save,
+            ),
+          ),
         ],
       ),
     );

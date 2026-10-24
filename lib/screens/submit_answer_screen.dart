@@ -350,6 +350,7 @@ class _SubmitAnswerScreenState extends State<SubmitAnswerScreen> {
   Widget build(BuildContext context) {
     return AppScaffold(
       title: widget.onBehalf ? 'Submit for a user' : 'Submit',
+      fullWidthBody: true,
       body: FutureBuilder<SubmitActivity?>(
         future: _activity,
         builder: (BuildContext context, AsyncSnapshot<SubmitActivity?> snap) {
@@ -392,31 +393,38 @@ class _SubmitAnswerScreenState extends State<SubmitAnswerScreen> {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: <Widget>[
-        Text(activity.name, style: context.typography.heading),
-        if (activity.description.isNotEmpty) ...<Widget>[
-          const SizedBox(height: 8),
-          Text(activity.description),
-        ],
-        if (points != null) Text('$points points'),
-        const SizedBox(height: 16),
-        if (widget.onBehalf) _userPicker(),
-        if (activity.adminOnlySubmission && !widget.onBehalf)
-          const InfoBanner(
-            title: 'View only. A game admin must submit an answer.',
-          )
-        else if (userId != null)
-          _submission(activity, userId)
-        else if (widget.onBehalf)
-          const Text('Choose a user to continue.'),
-        if (!widget.onBehalf && userId != null) ...<Widget>[
-          const SizedBox(height: 16),
-          ActivityNotesCard(
-            key: ValueKey<String>('notes-${activity.id}'),
-            db: widget.db,
-            userId: userId,
-            activityId: activity.id,
+        PageContent(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: <Widget>[
+              Text(activity.name, style: context.typography.heading),
+              if (activity.description.isNotEmpty) ...<Widget>[
+                const SizedBox(height: 8),
+                Text(activity.description),
+              ],
+              if (points != null) Text('$points points'),
+              const SizedBox(height: 16),
+              if (widget.onBehalf) _userPicker(),
+              if (activity.adminOnlySubmission && !widget.onBehalf)
+                const InfoBanner(
+                  title: 'View only. A game admin must submit an answer.',
+                )
+              else if (userId != null)
+                _submission(activity, userId)
+              else if (widget.onBehalf)
+                const Text('Choose a user to continue.'),
+              if (!widget.onBehalf && userId != null) ...<Widget>[
+                const SizedBox(height: 16),
+                ActivityNotesCard(
+                  key: ValueKey<String>('notes-${activity.id}'),
+                  db: widget.db,
+                  userId: userId,
+                  activityId: activity.id,
+                ),
+              ],
+            ],
           ),
-        ],
+        ),
       ],
     );
   }

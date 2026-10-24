@@ -98,16 +98,21 @@ class _ScoreboardScreenState extends State<ScoreboardScreen> {
         itemBuilder: (BuildContext context, int index) {
           final ScoreboardEntry entry = entries[index];
           final bool mine = entry.userId == me;
-          return TileCard(
-            // Tile has no selected state, so the signed-in player's row is
-            // filled instead.
-            variant: mine ? TileVariant.filled : TileVariant.simple,
-            leading: _PlaceMarker(place: entry.place, color: colors.foreground),
-            title: mine ? '${entry.username} (you)' : entry.username,
-            subtitle: entry.gradedCount == 1
-                ? '1 graded'
-                : '${entry.gradedCount} graded',
-            trailing: Text('${entry.totalPoints}', style: typography.title),
+          return PageContent(
+            child: TileCard(
+              // Tile has no selected state, so the signed-in player's row is
+              // filled instead.
+              variant: mine ? TileVariant.filled : TileVariant.simple,
+              leading: _PlaceMarker(
+                place: entry.place,
+                color: colors.foreground,
+              ),
+              title: mine ? '${entry.username} (you)' : entry.username,
+              subtitle: entry.gradedCount == 1
+                  ? '1 graded'
+                  : '${entry.gradedCount} graded',
+              trailing: Text('${entry.totalPoints}', style: typography.title),
+            ),
           );
         },
       ),
@@ -118,6 +123,7 @@ class _ScoreboardScreenState extends State<ScoreboardScreen> {
   Widget build(BuildContext context) {
     return AppScaffold(
       title: 'Scoreboard',
+      fullWidthBody: true,
       body: _body(AuthScope.of(context).userId),
     );
   }

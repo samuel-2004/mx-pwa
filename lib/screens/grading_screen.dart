@@ -2,6 +2,7 @@ import 'dart:typed_data';
 
 import 'package:flutter/foundation.dart' show debugPrint, kDebugMode;
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart' show ScrollDirection;
 import 'package:flutter/services.dart' show TextInputFormatter;
 import 'package:latlong2/latlong.dart' show LatLng;
 import 'package:go_router/go_router.dart';
@@ -63,6 +64,7 @@ class _GradingScreenState extends State<GradingScreen> {
   Object? _loadError;
   bool _loading = true;
   bool _includeGraded = false;
+  bool _showFilters = true;
   String _subsectionFilter = _allSubsections;
   _ActivityTypeFilter _activityTypeFilter = _ActivityTypeFilter.all;
   String _usernameQuery = '';
@@ -211,6 +213,25 @@ class _GradingScreenState extends State<GradingScreen> {
     });
   }
 
+  bool _onScrollNotification(
+    ScrollNotification notification,
+    bool isSmallScreen,
+  ) {
+    if (!isSmallScreen ||
+        notification.metrics.axis != Axis.vertical ||
+        notification is! UserScrollNotification) {
+      return false;
+    }
+
+    if (notification.direction == ScrollDirection.reverse && _showFilters) {
+      setState(() => _showFilters = false);
+    } else if (notification.direction == ScrollDirection.forward &&
+        !_showFilters) {
+      setState(() => _showFilters = true);
+    }
+    return false;
+  }
+
   /// Saves a grade. Returns an error message, or null on success.
   Future<String?> _grade(GradingItem item, int points) async {
     try {
@@ -275,10 +296,12 @@ class _GradingScreenState extends State<GradingScreen> {
       itemCount: filteredItems.length,
       itemBuilder: (BuildContext context, int index) {
         final GradingItem item = filteredItems[index];
-        return _GradeCard(
-          key: ValueKey<String>(item.answerId),
-          item: item,
-          onGrade: (int points) => _grade(item, points),
+        return PageContent(
+          child: _GradeCard(
+            key: ValueKey<String>(item.answerId),
+            item: item,
+            onGrade: (int points) => _grade(item, points),
+          ),
         );
       },
     );
@@ -286,8 +309,11 @@ class _GradingScreenState extends State<GradingScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final bool isSmallScreen =
+        MediaQuery.sizeOf(context).width < Style.breakpoints.desktop;
     return AppScaffold(
       title: 'Grading',
+      fullWidthBody: true,
       floatingActionButton: AuthScope.of(context).isAdmin
           ? Button.small(
               label: 'Bulk scores',
@@ -295,23 +321,42 @@ class _GradingScreenState extends State<GradingScreen> {
               onPressed: () => context.go(Routes.scoreGrid),
             )
           : null,
-      body: Column(
-        children: <Widget>[
-          Padding(
-            padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
-            child: ToggleTile(
-              title: 'Show graded',
-              value: _includeGraded,
-              onChanged: (bool on) {
-                _includeGraded = on;
-                _refresh();
-              },
+      body: NotificationListener<ScrollNotification>(
+        onNotification: (ScrollNotification notification) =>
+            _onScrollNotification(notification, isSmallScreen),
+        child: Column(
+          children: <Widget>[
+            AnimatedSize(
+              alignment: Alignment.topCenter,
+              duration: const Duration(milliseconds: 180),
+              curve: Curves.easeInOut,
+              child: _showFilters
+                  ? Column(
+                      children: <Widget>[
+                        PageContent(
+                          child: Padding(
+                            padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+                            child: ToggleTile(
+                              title: 'Show graded',
+                              value: _includeGraded,
+                              onChanged: (bool on) {
+                                _includeGraded = on;
+                                _refresh();
+                              },
+                            ),
+                          ),
+                        ),
+                        if (!_loading &&
+                            _loadError == null &&
+                            (_items?.isNotEmpty ?? false))
+                          PageContent(child: _filters(_items!)),
+                      ],
+                    )
+                  : const SizedBox.shrink(),
             ),
-          ),
-          if (!_loading && _loadError == null && (_items?.isNotEmpty ?? false))
-            _filters(_items!),
-          Expanded(child: _body()),
-        ],
+            Expanded(child: _body()),
+          ],
+        ),
       ),
     );
   }

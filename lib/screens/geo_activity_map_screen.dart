@@ -55,7 +55,7 @@ class _GeoActivityMapScreenState extends State<GeoActivityMapScreen> {
         if (data == null) {
           final Object? error = snapshot.error;
           return AppScaffold(
-            title: 'Geographical activity map',
+            title: 'Game map',
             fullWidthBody: true,
             body: Center(
               child: error == null
@@ -68,7 +68,7 @@ class _GeoActivityMapScreenState extends State<GeoActivityMapScreen> {
           );
         }
         return AppScaffold(
-          title: 'Geographical activity map',
+          title: 'Game map',
           fullWidthBody: true,
           smallScreenAction: Button.small(
             label: 'Controls',

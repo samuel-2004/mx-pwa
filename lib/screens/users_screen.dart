@@ -217,6 +217,7 @@ class _UsersScreenState extends State<UsersScreen> {
   Widget build(BuildContext context) {
     return AppScaffold(
       title: 'Users',
+      fullWidthBody: true,
       floatingActionButton: Button.small(
         label: 'Add user',
         icon: const Icon(Icons.person_add),
@@ -266,29 +267,31 @@ class _UsersScreenState extends State<UsersScreen> {
           ];
           return Column(
             children: <Widget>[
-              Padding(
-                padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  spacing: 8,
-                  children: <Widget>[
-                    Picker<_UserTypeFilter>(
-                      label: 'User type',
-                      value: _userTypeFilter,
-                      items: _UserTypeFilter.values,
-                      itemLabel: (_UserTypeFilter filter) => filter.label,
-                      onChanged: (_UserTypeFilter filter) => setState(() {
-                        _userTypeFilter = filter;
-                      }),
-                    ),
-                    SearchField(
-                      controller: _usernameSearch,
-                      placeholder: 'Search users',
-                      onChanged: (String value) => setState(() {
-                        _usernameQuery = value.trim().toLowerCase();
-                      }),
-                    ),
-                  ],
+              PageContent(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    spacing: 8,
+                    children: <Widget>[
+                      Picker<_UserTypeFilter>(
+                        label: 'User type',
+                        value: _userTypeFilter,
+                        items: _UserTypeFilter.values,
+                        itemLabel: (_UserTypeFilter filter) => filter.label,
+                        onChanged: (_UserTypeFilter filter) => setState(() {
+                          _userTypeFilter = filter;
+                        }),
+                      ),
+                      SearchField(
+                        controller: _usernameSearch,
+                        placeholder: 'Search users',
+                        onChanged: (String value) => setState(() {
+                          _usernameQuery = value.trim().toLowerCase();
+                        }),
+                      ),
+                    ],
+                  ),
                 ),
               ),
               Expanded(
@@ -312,19 +315,21 @@ class _UsersScreenState extends State<UsersScreen> {
                         itemCount: users.length,
                         itemBuilder: (BuildContext context, int index) {
                           final GameUser user = users[index];
-                          return TileCard(
-                            leading: Icon(
-                              user.isAdmin
-                                  ? Icons.admin_panel_settings
-                                  : (user.subsectionIds.isEmpty
-                                      ? Icons.person
-                                      : Icons.supervisor_account),
+                          return PageContent(
+                            child: TileCard(
+                              leading: Icon(
+                                user.isAdmin
+                                    ? Icons.admin_panel_settings
+                                    : (user.subsectionIds.isEmpty
+                                        ? Icons.person
+                                        : Icons.supervisor_account),
+                              ),
+                              title: user.username,
+                              subtitle: _subtitle(user, directory),
+                              trailing: user.isAdmin
+                                  ? null
+                                  : _actionsMenu(user, directory),
                             ),
-                            title: user.username,
-                            subtitle: _subtitle(user, directory),
-                            trailing: user.isAdmin
-                                ? null
-                                : _actionsMenu(user, directory),
                           );
                         },
                       ),

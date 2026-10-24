@@ -90,27 +90,6 @@ const List<GameOption> gameOptions = [
   ),
 
   GameOption(
-    key: 'game_mode',
-    name: 'Game mode',
-    description: 'Controls how the game operates.',
-    type: GameOptionType.dropdown,
-    options: [
-      GameOptionChoice(
-        value: 'standard',
-        label: 'Standard',
-      ),
-      GameOptionChoice(
-        value: 'competitive',
-        label: 'Competitive',
-      ),
-      GameOptionChoice(
-        value: 'practice',
-        label: 'Practice',
-      ),
-    ],
-  ),
-
-  GameOption(
     key: allowResubmissionOptionKey,
     name: 'Allow resubmission',
     description:

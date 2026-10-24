@@ -36,6 +36,7 @@ class TermsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return AppScaffold(
       title: 'Terms & Conditions / Licence',
+      fullWidthBody: true,
       body: FutureBuilder<String>(
         future: _loadAndProcessTerms(),
         builder: (BuildContext context, AsyncSnapshot<String> snapshot) {
@@ -49,9 +50,13 @@ class TermsScreen extends StatelessWidget {
             );
           }
 
-          return Markdown(
-            data: snapshot.data ?? '',
-            padding: const EdgeInsets.all(16),
+          return SingleChildScrollView(
+            child: PageContent(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: MarkdownBody(data: snapshot.data ?? ''),
+              ),
+            ),
           );
         },
       ),

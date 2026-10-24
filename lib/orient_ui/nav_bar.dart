@@ -3,6 +3,8 @@ import 'package:flutter/widgets.dart';
 
 import 'style.dart';
 
+const double _bottomBarHeight = 72;
+
 class NavBarItem {
   final Widget icon;
   final String label;
@@ -202,7 +204,7 @@ class _BottomNavigationBar extends StatelessWidget {
       ),
       padding: EdgeInsets.only(bottom: bottomPadding),
       child: SizedBox(
-        height: 72,
+        height: _bottomBarHeight,
         child: Row(
           children: items.asMap().entries.map((entry) {
             final index = entry.key;
@@ -276,41 +278,50 @@ class _BottomBarItem extends StatelessWidget {
 }
 
 class _NavBarState extends State<NavBar> {
-  // Lets Flutter move the body between the Row and Column instead of
-  // rebuilding it. A rebuild re-listens to single-subscription streams.
-  final GlobalKey _bodyKey = GlobalKey();
-
   @override
   Widget build(BuildContext context) {
     final bool isDesktop =
         MediaQuery.of(context).size.width >= Style.breakpoints.desktop;
-    final Widget body = KeyedSubtree(key: _bodyKey, child: widget.body);
+    final double bottomBarHeight =
+        _bottomBarHeight + MediaQuery.of(context).padding.bottom;
 
-    if (isDesktop) {
-      return Row(
-        children: [
-          _NavigationRail(
-            currentIndex: widget.currentIndex,
-            onTap: widget.onTap,
-            items: widget.items,
-            header: widget.railHeader,
-            footer: widget.railFooter,
-            footerIndex: widget.railFooterIndex,
-            width: widget.railWidth,
-          ),
-          Expanded(child: body),
-        ],
-      );
-    }
-
-    return Column(
-      children: [
-        Expanded(child: body),
-        _BottomNavigationBar(
-          currentIndex: widget.currentIndex,
-          onTap: widget.onTap,
-          items: widget.items,
+    return Stack(
+      fit: StackFit.expand,
+      children: <Widget>[
+        Positioned(
+          left: isDesktop ? widget.railWidth : 0,
+          top: 0,
+          right: 0,
+          bottom: isDesktop ? 0 : bottomBarHeight,
+          child: widget.body,
         ),
+        if (isDesktop)
+          Positioned(
+            left: 0,
+            top: 0,
+            bottom: 0,
+            width: widget.railWidth,
+            child: _NavigationRail(
+              currentIndex: widget.currentIndex,
+              onTap: widget.onTap,
+              items: widget.items,
+              header: widget.railHeader,
+              footer: widget.railFooter,
+              footerIndex: widget.railFooterIndex,
+              width: widget.railWidth,
+            ),
+          )
+        else
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: _BottomNavigationBar(
+              currentIndex: widget.currentIndex,
+              onTap: widget.onTap,
+              items: widget.items,
+            ),
+          ),
       ],
     );
   }

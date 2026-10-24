@@ -145,7 +145,12 @@ class AppScaffold extends StatelessWidget {
                     onTap: (int index) => context.go(destinations[index].path),
                     items: <NavBarItem>[
                       for (final _Destination d in destinations)
-                        NavBarItem(icon: Icon(d.icon), label: d.label),
+                        NavBarItem(
+                          icon: Icon(d.icon),
+                          label: isSmallScreen && d.path == Routes.scoreboard
+                              ? 'Scores'
+                              : d.label,
+                        ),
                     ],
                     railFooterIndex: destinations.length - 1,
                     body: content,
@@ -251,50 +256,88 @@ class _ScrollAwareScaffoldState extends State<ScrollAwareScaffold> {
     final Color backgroundColor =
         widget.backgroundColor ?? Theme.of(context).scaffoldBackgroundColor;
 
-    if (!isSmallScreen) {
-      return Scaffold(
-        backgroundColor: backgroundColor,
-        appBar: appBar,
-        body: widget.body,
-      );
-    }
-
     final Color headerColor = appBar.backgroundColor ??
         Theme.of(context).appBarTheme.backgroundColor ??
         Theme.of(context).colorScheme.surface;
 
     return Scaffold(
       backgroundColor: backgroundColor,
-      body: Column(
+      appBar: isSmallScreen ? null : appBar,
+      body: Stack(
+        fit: StackFit.expand,
         children: <Widget>[
-          SafeArea(
-            top: true,
-            bottom: false,
-            left: false,
-            right: false,
-            child: ColoredBox(
-              color: headerColor,
-              child: ClipRect(
-                child: AnimatedSize(
-                  alignment: Alignment.topCenter,
-                  duration: const Duration(milliseconds: 180),
-                  curve: Curves.easeInOut,
-                  child: SizedBox(
-                    width: double.infinity,
-                    height: _showHeader ? kToolbarHeight : 0,
-                    child: appBar,
+          // Keep stream-backed page content mounted across the breakpoint.
+          AnimatedPositioned(
+            duration: const Duration(milliseconds: 180),
+            curve: Curves.easeInOut,
+            left: 0,
+            top: isSmallScreen
+                ? MediaQuery.of(context).padding.top +
+                    (_showHeader ? kToolbarHeight : 0)
+                : 0,
+            right: 0,
+            bottom: 0,
+            child: NotificationListener<ScrollNotification>(
+              onNotification:
+                  isSmallScreen ? _onScrollNotification : (_) => false,
+              child: widget.body,
+            ),
+          ),
+          if (isSmallScreen)
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              child: SafeArea(
+                top: true,
+                bottom: false,
+                left: false,
+                right: false,
+                child: ColoredBox(
+                  color: headerColor,
+                  child: ClipRect(
+                    child: AnimatedSize(
+                      alignment: Alignment.topCenter,
+                      duration: const Duration(milliseconds: 180),
+                      curve: Curves.easeInOut,
+                      child: SizedBox(
+                        width: double.infinity,
+                        height: _showHeader ? kToolbarHeight : 0,
+                        child: appBar,
+                      ),
+                    ),
                   ),
                 ),
               ),
             ),
-          ),
-          Expanded(
-            child: NotificationListener<ScrollNotification>(
-              onNotification: _onScrollNotification,
-              child: widget.body,
-            ),
-          ),
         ],
+      ),
+    );
+  }
+}
+
+/// Centers page content while allowing its parent scrollable to use full width.
+class PageContent extends StatelessWidget {
+  /// Creates a centred, width-limited page content region.
+  const PageContent({
+    required this.child,
+    this.maxWidth = _maxContentWidth,
+    super.key,
+  });
+
+  /// The page content to centre.
+  final Widget child;
+
+  /// Maximum width of the content region.
+  final double maxWidth;
+
+  @override
+  Widget build(BuildContext context) {
+    return Align(
+      alignment: Alignment.topCenter,
+      child: ConstrainedBox(
+        constraints: BoxConstraints(maxWidth: maxWidth),
+        child: SizedBox(width: double.infinity, child: child),
       ),
     );
   }
