@@ -65,6 +65,7 @@ const Schema schema = Schema(<Table>[
     Column.text('user_id'),
     Column.text('activity_id'),
     Column.text('tags'),
+    Column.text('note_text'),
     Column.real('lat'),
     Column.real('lng'),
     Column.text('suburb'),

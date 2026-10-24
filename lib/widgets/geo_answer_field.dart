@@ -118,7 +118,10 @@ class _GeoAnswerFieldState extends State<GeoAnswerField> {
           GeoMap(
             markers: <GeoMapMarker>[
               if (point != null)
-                GeoMapMarker(point: LatLng(point.lat, point.lng), color: color),
+                GeoMapMarker(
+                  point: LatLng(point.lat, point.lng), 
+                  color: Color(0xFFFF0000)
+                  ),
             ],
             onTap: _tapped,
           ),

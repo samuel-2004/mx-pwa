@@ -122,7 +122,7 @@ class _GeoSolutionEditorState extends State<GeoSolutionEditor> {
   Widget build(BuildContext context) {
     final GeoSolution? solution = _solution;
     final double? limit = solution?.maxDistanceM;
-    final Color color = Theme.of(context).colorScheme.primary;
+    final Color color = Theme.of(context).colorScheme.error;
     const TextInputType numberKeyboard =
         TextInputType.numberWithOptions(decimal: true, signed: true);
     return Column(

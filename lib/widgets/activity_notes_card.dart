@@ -20,6 +20,7 @@ import 'loading_spinner.dart';
 import 'popups.dart';
 import 'surface_card.dart';
 import 'tag_chips.dart';
+import 'auto_save_field.dart';
 
 // The tallest the Add tag menu gets before it scrolls.
 const double _maxMenuHeight = 320;
@@ -98,6 +99,18 @@ class _ActivityNotesCardState extends State<ActivityNotesCard> {
         ),
       );
 
+  Future<void> _saveNoteText(String text) async {
+    final bool saved = await _run(
+      () => setActivityNoteText(
+        widget.db,
+        userId: widget.userId,
+        activityId: widget.activityId,
+        text: text,
+      ),
+    );
+    if (!saved) throw StateError('Could not save notes.');
+  }
+
   Future<bool> _savePin(NotePin? pin) async {
     final bool saved = await _run(
       () => setActivityPin(
@@ -170,19 +183,42 @@ class _ActivityNotesCardState extends State<ActivityNotesCard> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
-                  Text('My notes', style: typography.subtitle),
+                  Text('My Notes', style: typography.title),
                   Text(
                     'Only you and your team can see this.',
                     style: typography.bodySmall.muted(context),
                   ),
                 ],
               ),
+              _noteText(note.noteText),
               _tags(note.tags, note.suburb),
               _pin(note.pin),
             ],
           );
         },
       ),
+    );
+  }
+
+  Widget _noteText(String value) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      spacing: 8,
+      children: <Widget>[
+        Text('Notes', style: context.typography.body.w600),
+        AutoSaveField(
+          label: 'Add a note',
+          value: value,
+          validator: validateActivityNoteText,
+          onSave: _saveNoteText,
+          keyboardType: TextInputType.multiline,
+          inputFormatters: <TextInputFormatter>[
+            LengthLimitingTextInputFormatter(maxActivityNoteTextLength),
+          ],
+          minLines: 3,
+          maxLines: 5,
+        ),
+      ],
     );
   }
 
@@ -309,15 +345,18 @@ class _ActivityNotesCardState extends State<ActivityNotesCard> {
               label: _showMap
                   ? 'Hide map'
                   : (pin == null ? 'Drop a pin' : 'Show map'),
-              icon: const Icon(Icons.place_outlined),
-              variant: ButtonVariant.outline,
+              icon: Icon(
+                Icons.place_outlined,
+                color: context.style.colors.info,
+              ),
+              variant: ButtonVariant.secondary,
               onPressed: () => setState(() => _showMap = !_showMap),
             ),
             if (_showMap)
               Button.small(
                 label: 'Use my location',
                 icon: const Icon(Icons.my_location),
-                variant: ButtonVariant.outline,
+                variant: ButtonVariant.secondary,
                 loading: _locating,
                 onPressed: () => unawaited(_useDevice()),
               ),
@@ -325,7 +364,7 @@ class _ActivityNotesCardState extends State<ActivityNotesCard> {
               Button.small(
                 label: 'Remove pin',
                 icon: const Icon(Icons.delete_outline),
-                variant: ButtonVariant.ghost,
+                variant: ButtonVariant.destructive,
                 onPressed: () => unawaited(_savePin(null)),
               ),
           ],
@@ -338,7 +377,7 @@ class _ActivityNotesCardState extends State<ActivityNotesCard> {
               if (pin != null)
                 GeoMapMarker(
                   point: LatLng(pin.lat, pin.lng),
-                  color: Theme.of(context).colorScheme.primary,
+                color: Color(0xFFFF0000)//context.style.colors.error,
                 ),
             ],
             onTap: (LatLng point) => unawaited(

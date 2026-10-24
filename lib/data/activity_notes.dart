@@ -16,6 +16,9 @@ const int maxTagNameLength = 30;
 /// `suburb` check in the database.
 const int maxSuburbLength = 100;
 
+/// The maximum length of a player's free-text note on one activity.
+const int maxActivityNoteTextLength = 1000;
+
 /// The colours offered for a tag, as `#RRGGBB`. The database accepts any
 /// colour in that form, so this only limits what the app offers.
 const List<String> tagPalette = <String>[
@@ -31,6 +34,7 @@ const List<String> tagPalette = <String>[
 
 final RegExp _colorPattern = RegExp(r'^#[0-9A-Fa-f]{6}$');
 final RegExp _controlChars = RegExp(r'[\x00-\x1F\x7F]');
+final RegExp _noteControlChars = RegExp(r'[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]');
 
 /// One tag: a name and its colour as `#RRGGBB`.
 class ActivityTag {
@@ -50,6 +54,7 @@ typedef NotePin = ({double lat, double lng});
 class ActivityNote {
   const ActivityNote({
     this.tags = const <ActivityTag>[],
+    this.noteText = '',
     this.pin,
     this.suburb,
   });
@@ -60,6 +65,9 @@ class ActivityNote {
   /// Sorted by name, at most [maxTagsPerActivity].
   final List<ActivityTag> tags;
 
+  /// Free-text details the player wants to remember about this activity.
+  final String noteText;
+
   /// Where the player thinks the activity should be done, or null.
   final NotePin? pin;
 
@@ -67,6 +75,24 @@ class ActivityNote {
   /// pin or no result yet.
   final String? suburb;
 }
+
+/// Checks the text a player enters for their private activity note.
+///
+/// [value] is the text to check. Returns an error message or null when valid.
+/// Does not throw.
+String? validateActivityNoteText(String value) {
+  if (value.runes.length > maxActivityNoteTextLength) {
+    return 'Use at most $maxActivityNoteTextLength characters.';
+  }
+  if (_noteControlChars.hasMatch(value)) return 'Use plain text only.';
+  return null;
+}
+
+String _normaliseActivityNoteText(String value) => value
+    .replaceAll('\r\n', '\n')
+    .replaceAll('\r', '\n')
+    .replaceAll(_noteControlChars, '')
+    .trim();
 
 /// Reads stored tags JSON, sorted by name.
 ///
@@ -138,7 +164,7 @@ Stream<ActivityNote> watchActivityNote(
 }) {
   return db
       .watch(
-        'SELECT tags, lat, lng, suburb FROM user_activity_notes '
+        'SELECT tags, note_text, lat, lng, suburb FROM user_activity_notes '
         'WHERE user_id = ? AND activity_id = ? LIMIT 1',
         parameters: <Object?>[userId, activityId],
       )
@@ -150,6 +176,7 @@ Stream<ActivityNote> watchActivityNote(
     final bool hasPin = lat != null && lng != null && isValidLatLng(lat, lng);
     return ActivityNote(
       tags: parseTags(row['tags'] as String?),
+      noteText: row['note_text'] as String? ?? '',
       pin: hasPin ? (lat: lat, lng: lng) : null,
       suburb: hasPin ? row['suburb'] as String? : null,
     );
@@ -217,6 +244,7 @@ Future<void> _saveNote(
     // starts with an empty tag object.
     final Map<String, Object?> row = <String, Object?>{
       'tags': '{}',
+      'note_text': '',
       ...changed,
     };
     await tx.execute(
@@ -229,6 +257,28 @@ Future<void> _saveNote(
 }
 
 String _now() => DateTime.now().toUtc().toIso8601String();
+
+/// Saves a player's private text on one activity.
+///
+/// [text] is trimmed and normalised before saving. Throws [ArgumentError] if
+/// the result is longer than [maxActivityNoteTextLength], and other
+/// exceptions if the local write fails.
+Future<void> setActivityNoteText(
+  PowerSyncDatabase db, {
+  required String userId,
+  required String activityId,
+  required String text,
+}) async {
+  final String normalised = _normaliseActivityNoteText(text);
+  final String? error = validateActivityNoteText(normalised);
+  if (error != null) throw ArgumentError(error);
+  await _saveNote(
+    db,
+    userId: userId,
+    activityId: activityId,
+    values: <String, Object?>{'note_text': normalised},
+  );
+}
 
 /// Replaces the player's tags on an activity.
 ///
