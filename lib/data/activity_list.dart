@@ -98,22 +98,30 @@ SELECT
 FROM activities a
 LEFT JOIN subsections s ON s.id = a.subsection_id AND s.deleted_at IS NULL
 LEFT JOIN games g ON g.id = a.game_id
-WHERE a.deleted_at IS NULL
+WHERE a.game_id = (
+    SELECT game_id FROM users WHERE id = ? AND deleted_at IS NULL LIMIT 1
+  )
+  AND a.deleted_at IS NULL
 ORDER BY COALESCE(s.subsection_order, 2147483647), a.activity_order, a.name
 ''';
 
 /// Watches the activity list from the local database.
 ///
-/// [db] the PowerSync database. [userId] whose submissions to attach.
-/// Returns a stream that emits again whenever the underlying tables change.
-/// The userId is bound as a query parameter. An unparseable start time is
-/// treated as no release gate. Activities with no answer types are left out.
+/// [db] is the PowerSync database; [userId] identifies the signed-in user and
+/// whose submissions to attach. Returns a stream of answerable activities in
+/// that user's game, re-emitting when the underlying tables change. The userId
+/// is bound as a query parameter. An unparseable start time is treated as no
+/// release gate. Activities with no answer types are left out. Query errors
+/// are emitted by the stream.
 Stream<List<ActivityListItem>> watchActivities(
   PowerSyncDatabase db,
   String userId,
 ) {
   return db
-      .watch(_activitiesSql, parameters: <Object?>[userId, userId, userId, userId])
+      .watch(
+        _activitiesSql,
+        parameters: <Object?>[userId, userId, userId, userId, userId],
+      )
       .map((results) {
     return <ActivityListItem>[
       for (final row in results)

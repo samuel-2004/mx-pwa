@@ -16,12 +16,20 @@ class ManagedSubsection {
   final String description;
 }
 
-/// Watches the game's subsections in display order, from the local database.
-Stream<List<ManagedSubsection>> watchSubsections(PowerSyncDatabase db) {
+/// Watches [gameId]'s subsections in display order from the local database.
+///
+/// [db] is the PowerSync database. Returns a stream of subsections. Database
+/// errors are emitted by the stream.
+Stream<List<ManagedSubsection>> watchSubsections(
+  PowerSyncDatabase db,
+  String gameId,
+) {
   return db
       .watch(
-        'SELECT id, name, "desc" AS description FROM subsections WHERE deleted_at IS NULL '
+        'SELECT id, name, "desc" AS description FROM subsections '
+        'WHERE game_id = ? AND deleted_at IS NULL '
         'ORDER BY subsection_order, name',
+        parameters: <Object?>[gameId],
       )
       .map((results) => <ManagedSubsection>[
             for (final row in results)
@@ -58,16 +66,22 @@ class ManagedActivity {
   final bool canResubmit;
 }
 
-/// Watches every live activity in list order, from the local database.
+/// Watches [gameId]'s live activities in list order from the local database.
 ///
-/// Emits again whenever the table changes. Subscribe to it once per widget.
-Stream<List<ManagedActivity>> watchManagedActivities(PowerSyncDatabase db) {
+/// [db] is the PowerSync database. Returns a stream that emits again whenever
+/// the table changes. Database errors are emitted by the stream.
+Stream<List<ManagedActivity>> watchManagedActivities(
+  PowerSyncDatabase db,
+  String gameId,
+) {
   return db
       .watch(
         'SELECT id, subsection_id, name, "desc" AS description, '
         'answer_schema, points, release_time_offset_minutes, can_resubmit '
         'FROM activities '
-        'WHERE deleted_at IS NULL ORDER BY activity_order, name',
+        'WHERE game_id = ? AND deleted_at IS NULL '
+        'ORDER BY activity_order, name',
+        parameters: <Object?>[gameId],
       )
       .map((results) => <ManagedActivity>[
             for (final row in results)

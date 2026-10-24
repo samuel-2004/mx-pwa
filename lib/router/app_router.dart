@@ -96,7 +96,7 @@ GoRouter createRouter(AuthState authState, PowerSyncDatabase db) {
         builder: (BuildContext context, GoRouterState state) =>
             // Admins manage activities here; players see their own progress.
             authState.isAdmin
-                ? ActivityManagerScreen(db: db)
+                ? ActivityManagerScreen(db: db, userId: authState.userId!)
                 : ActivitiesScreen(db: db),
         routes: <RouteBase>[
           GoRoute(

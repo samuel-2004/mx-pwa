@@ -101,9 +101,14 @@ class _BulkResult {
 /// Admin page to build the game: collapsible subsections of numbered
 /// activities that edit in place, plus bulk creation.
 class ActivityManagerScreen extends StatefulWidget {
-  const ActivityManagerScreen({required this.db, super.key});
+  const ActivityManagerScreen({
+    required this.db,
+    required this.userId,
+    super.key,
+  });
 
   final PowerSyncDatabase db;
+  final String userId;
 
   @override
   State<ActivityManagerScreen> createState() => _ActivityManagerScreenState();
@@ -112,7 +117,7 @@ class ActivityManagerScreen extends StatefulWidget {
 class _ActivityManagerScreenState extends State<ActivityManagerScreen> {
   // Watched, not read once: the game arrives with the first sync, which can
   // finish after this page is already on screen.
-  late final Stream<String?> _gameId = watchGameId(widget.db);
+  late final Stream<String?> _gameId = watchGameId(widget.db, widget.userId);
 
   @override
   Widget build(BuildContext context) {
@@ -158,8 +163,8 @@ class _ManagerPageState extends State<_ManagerPage> {
   @override
   void initState() {
     super.initState();
-    _subsections = watchSubsections(widget.db);
-    _activities = watchManagedActivities(widget.db);
+    _subsections = watchSubsections(widget.db, widget.gameId);
+    _activities = watchManagedActivities(widget.db, widget.gameId);
     _settings = watchGameSettings(widget.db);
   }
 

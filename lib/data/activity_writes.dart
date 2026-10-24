@@ -217,24 +217,34 @@ List<ActivityDraft> numberedDrafts(ActivityDraft base, int count) {
 
 String _now() => DateTime.now().toUtc().toIso8601String();
 
-/// Reads the id of the signed-in user's game from the local database.
+/// Reads the signed-in user's game id from the local database.
 ///
-/// Returns null until the game has synced. Does not throw on an empty table.
-Future<String?> loadGameId(PowerSyncDatabase db) async {
+/// [db] is the PowerSync database; [userId] identifies the signed-in user.
+/// Returns null until their profile has synced or if it has no game. Throws if
+/// the database query fails.
+Future<String?> loadGameId(PowerSyncDatabase db, String userId) async {
   final row = await db
-      .getOptional('SELECT id FROM games WHERE deleted_at IS NULL LIMIT 1');
-  return row?['id'] as String?;
+      .getOptional(
+        'SELECT game_id FROM users WHERE id = ? AND deleted_at IS NULL LIMIT 1',
+        <Object?>[userId],
+      );
+  return row?['game_id'] as String?;
 }
 
 /// Watches the id of the signed-in user's game in the local database.
 ///
-/// Emits null until the game has synced, then the id. Screens that wait on it
-/// update by themselves when the first sync finishes, instead of needing a
-/// retry. Emits only when the value changes.
-Stream<String?> watchGameId(PowerSyncDatabase db) {
+/// [db] is the PowerSync database; [userId] identifies the signed-in user.
+/// Returns a stream that emits null until their profile has synced, then the
+/// game id, and only when that value changes. Query errors are emitted by the
+/// stream.
+Stream<String?> watchGameId(PowerSyncDatabase db, String userId) {
   return db
-      .watch('SELECT id FROM games WHERE deleted_at IS NULL LIMIT 1')
-      .map((results) => results.isEmpty ? null : results.first['id'] as String?)
+      .watch(
+        'SELECT game_id FROM users WHERE id = ? AND deleted_at IS NULL LIMIT 1',
+        parameters: <Object?>[userId],
+      )
+      .map((results) =>
+          results.isEmpty ? null : results.first['game_id'] as String?)
       .distinct();
 }
 
