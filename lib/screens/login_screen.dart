@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../auth/auth_state.dart';
 import '../orient_ui/button.dart';
+import '../orient_ui/card_box.dart';
 import '../orient_ui/info_banner.dart';
 import '../orient_ui/tappable_icon.dart';
 import '../router/routes.dart';
@@ -137,80 +138,97 @@ class _LoginScreenState extends State<LoginScreen> {
 
     return ScrollAwareScaffold(
       title: 'Sign in',
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: <Widget>[
-          PageContent(
-            maxWidth: 400,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: <Widget>[
-                TextField(
-                  controller: _username,
-                  decoration: const InputDecoration(labelText: 'Username'),
-                  textInputAction: TextInputAction.next,
-                ),
-                TextField(
-                  controller: _password,
-                  decoration: InputDecoration(
-                    labelText: 'Password',
-                    suffixIcon: TappableIcon(
-                      icon: Icon(
-                        _showPassword
-                            ? Icons.visibility_off
-                            : Icons.visibility,
+      body: LayoutBuilder(
+        builder: (BuildContext context, BoxConstraints constraints) {
+          return SingleChildScrollView(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(minHeight: constraints.maxHeight),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Center(
+                  child: PageContent(
+                    maxWidth: 400,
+                    child: CardBox(
+                      padding: const EdgeInsets.all(24),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: <Widget>[
+                          TextField(
+                            controller: _username,
+                            decoration: const InputDecoration(
+                              labelText: 'Username',
+                            ),
+                            textInputAction: TextInputAction.next,
+                          ),
+                          TextField(
+                            controller: _password,
+                            decoration: InputDecoration(
+                              labelText: 'Password',
+                              suffixIcon: TappableIcon(
+                                icon: Icon(
+                                  _showPassword
+                                      ? Icons.visibility_off
+                                      : Icons.visibility,
+                                ),
+                                tooltip: _showPassword
+                                    ? 'Hide password'
+                                    : 'Show password',
+                                onPressed: () {
+                                  setState(() {
+                                    _showPassword = !_showPassword;
+                                  });
+                                },
+                              ),
+                            ),
+                            obscureText: !_showPassword,
+                            textInputAction: TextInputAction.next,
+                          ),
+                          TextField(
+                            controller: _gameCode,
+                            readOnly: isGameCodeReadOnly,
+                            decoration: const InputDecoration(
+                              labelText: 'Game code',
+                            ),
+                            textInputAction: TextInputAction.done,
+                            onSubmitted: (String _) => _submit(),
+                          ),
+                          if (_error != null)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 12),
+                              child: InfoBanner(
+                                title: _error!,
+                                variant: InfoBannerVariant.error,
+                              ),
+                            ),
+                          const SizedBox(height: 16),
+                          Button(
+                            label: 'SIGN IN',
+                            loading: _busy,
+                            fontWeight: FontWeight.bold,
+                            onPressed: _submit,
+                          ),
+                          const SizedBox(height: 8),
+                          Button(
+                            label: 'JOIN GAME',
+                            variant: ButtonVariant.secondary,
+                            fontWeight: FontWeight.bold,
+                            onPressed: _busy ? null : _joinGame,
+                          ),
+                          const SizedBox(height: 8),
+                          Button(
+                            label: 'Create a game',
+                            variant: ButtonVariant.link,
+                            onPressed: () => context.go(Routes.createGame),
+                          ),
+                        ],
                       ),
-                      tooltip:
-                          _showPassword ? 'Hide password' : 'Show password',
-                      onPressed: () {
-                        setState(() {
-                          _showPassword = !_showPassword;
-                        });
-                      },
                     ),
                   ),
-                  obscureText: !_showPassword,
-                  textInputAction: TextInputAction.next,
                 ),
-                TextField(
-                  controller: _gameCode,
-                  readOnly: isGameCodeReadOnly,
-                  decoration: const InputDecoration(labelText: 'Game code'),
-                  textInputAction: TextInputAction.done,
-                  onSubmitted: (String _) => _submit(),
-                ),
-                if (_error != null)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 12),
-                    child: InfoBanner(
-                      title: _error!,
-                      variant: InfoBannerVariant.error,
-                    ),
-                  ),
-                const SizedBox(height: 16),
-                Button(
-                  label: 'SIGN IN',
-                  loading: _busy,
-                  fontWeight: FontWeight.bold,
-                  onPressed: _submit,
-                ),
-                const SizedBox(height: 8),
-                Button(
-                  label: 'JOIN GAME',
-                  variant: ButtonVariant.secondary,
-                  fontWeight: FontWeight.bold,
-                  onPressed: _busy ? null : _joinGame,
-                ),
-                const SizedBox(height: 8),
-                Button(
-                  label: 'Create a game',
-                  variant: ButtonVariant.link,
-                  onPressed: () => context.go(Routes.createGame),
-                ),
-              ],
+              ),
             ),
-          ),
-        ],
+          );
+        },
       ),
     );
   }

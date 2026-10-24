@@ -62,7 +62,10 @@ class AppScaffold extends StatelessWidget {
   final bool fullWidthBody;
 
   // Mirrors the route guards. The server must enforce the same rules.
-  List<_Destination> _destinationsFor(AuthState auth) {
+  List<_Destination> _destinationsFor(
+    AuthState auth, {
+    required bool isSmallScreen,
+  }) {
     final bool isStaff = auth.isAdmin || auth.isSubsectionAdmin;
     return <_Destination>[
       if (!auth.isSubsectionAdmin)
@@ -71,7 +74,8 @@ class AppScaffold extends StatelessWidget {
         const _Destination('Map', Icons.map_outlined, Routes.geoMap),
       const _Destination('Scoreboard', Icons.leaderboard, Routes.scoreboard),
       if (isStaff) const _Destination('Grading', Icons.grading, Routes.grading),
-      if (auth.isAdmin) const _Destination('Users', Icons.group, Routes.users),
+      if (auth.isAdmin && !isSmallScreen)
+        const _Destination('Users', Icons.group, Routes.users),
       if (auth.isAdmin)
         const _Destination('Game', Icons.tune, Routes.gameSettings),
       const _Destination('Settings', Icons.settings_outlined, Routes.settings),
@@ -81,20 +85,30 @@ class AppScaffold extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final AuthState auth = AuthScope.of(context);
-    final List<_Destination> destinations = _destinationsFor(auth);
     final String path = GoRouterState.of(context).uri.path;
-    final int found = destinations.indexWhere(
-      (_Destination d) => path == d.path || path.startsWith('${d.path}/'),
-    );
-    final int selected = found < 0 ? 0 : found;
-    // NavBar asserts that it has at least two items.
-    final bool showNav = destinations.length >= 2;
 
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
         // A resize can briefly hand the page a ~1x1 box.
         final bool isSmallScreen =
             constraints.maxWidth < Style.breakpoints.desktop;
+        final List<_Destination> destinations = _destinationsFor(
+          auth,
+          isSmallScreen: isSmallScreen,
+        );
+        int selected = destinations.indexWhere(
+          (_Destination d) => path == d.path || path.startsWith('${d.path}/'),
+        );
+        // Users is opened from the scoreboard on mobile, so keep Scores
+        // selected while that contextual screen is visible.
+        if (selected < 0 && isSmallScreen && path == Routes.users) {
+          selected = destinations.indexWhere(
+            (_Destination d) => d.path == Routes.scoreboard,
+          );
+        }
+        if (selected < 0) selected = 0;
+        // NavBar asserts that it has at least two items.
+        final bool showNav = destinations.length >= 2;
         final Widget? floatingButton = floatingActionButton;
         final Widget? headerAction = smallScreenAction ?? floatingButton;
         // NavBar owns the bottom bar, so Scaffold's own floating button slot

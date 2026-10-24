@@ -103,10 +103,10 @@ Deno.serve(async (req: Request): Promise<Response> => {
 
       const subsectionRes = await admin
         .from('subsections')
-        .select('id, name')
+        .select('id, name, subsection_order')
         .eq('game_id', gameId)
         .is('deleted_at', null)
-        .order('name');
+        .order('subsection_order', { ascending: true });
 
       if (subsectionRes.error) {
         return serverError(subsectionRes.error);

@@ -201,7 +201,7 @@ int? _parseImportPoints(String pointsText) {
 }
 
 String _appendLegacyPoints(String description, String pointsText) {
-  final String note = 'Paper points: $pointsText';
+  final String note = 'Points: $pointsText';
   if (description.isEmpty) return note;
   return '$description\n\n$note';
 }

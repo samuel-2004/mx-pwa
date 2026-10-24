@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart' show debugPrint, kDebugMode;
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 import '../auth/auth_scope.dart';
 import '../data/scoreboard_api.dart';
@@ -10,7 +11,9 @@ import '../orient_ui/button.dart';
 import '../orient_ui/empty_state.dart';
 import '../orient_ui/style.dart';
 import '../orient_ui/tag.dart';
+import '../orient_ui/tappable_icon.dart';
 import '../orient_ui/tile.dart';
+import '../router/routes.dart';
 import '../widgets/loading_spinner.dart';
 import '../widgets/surface_card.dart';
 
@@ -121,8 +124,16 @@ class _ScoreboardScreenState extends State<ScoreboardScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final bool isAdmin = AuthScope.of(context).isAdmin;
     return AppScaffold(
       title: 'Scoreboard',
+      smallScreenAction: isAdmin
+          ? TappableIcon(
+              icon: const Icon(Icons.group),
+              tooltip: 'Manage users',
+              onPressed: () => context.go(Routes.users),
+            )
+          : null,
       fullWidthBody: true,
       body: _body(AuthScope.of(context).userId),
     );

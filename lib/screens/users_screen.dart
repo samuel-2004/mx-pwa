@@ -178,9 +178,10 @@ class _UsersScreenState extends State<UsersScreen> {
 
   String? _subtitle(GameUser user, UserDirectory directory) {
     if (user.isAdmin) return 'Admin';
+    final Set<String> subsectionIds = user.subsectionIds.toSet();
     final List<String> names = <String>[
-      for (final String id in user.subsectionIds)
-        if (directory.subsectionName(id) != null) directory.subsectionName(id)!,
+      for (final SubsectionRef subsection in directory.subsections)
+        if (subsectionIds.contains(subsection.id)) subsection.name,
     ];
     return names.isEmpty ? 'Player' : 'Manages: ${names.join(', ')}';
   }
