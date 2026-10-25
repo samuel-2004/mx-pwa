@@ -10,7 +10,6 @@ import '../orient_ui/style.dart';
 import '../orient_ui/tappable_icon.dart';
 import '../router/routes.dart';
 import '../widgets/surface_card.dart';
-import '../widgets/loading_spinner.dart';
 
 const double _minPageSide = 50;
 const double _maxContentWidth = 900;
@@ -67,17 +66,21 @@ class AppScaffold extends StatelessWidget {
     AuthState auth, {
     required bool isSmallScreen,
   }) {
-    final bool isStaff = auth.isAdmin || auth.isSubsectionAdmin;
+    // Until the roles are known the menu assumes an admin. It is only labels:
+    // every screen behind it waits for the real roles, and RLS enforces
+    // access.
+    final bool isAdmin = auth.isAdmin || !auth.rolesLoaded;
+    final bool isStaff = isAdmin || auth.isSubsectionAdmin;
     return <_Destination>[
       if (!auth.isSubsectionAdmin)
         const _Destination('Activities', Icons.list_alt, Routes.activities),
-      if (auth.isAdmin)
+      if (isAdmin)
         const _Destination('Map', Icons.map_outlined, Routes.geoMap),
       const _Destination('Scoreboard', Icons.leaderboard, Routes.scoreboard),
       if (isStaff) const _Destination('Grading', Icons.grading, Routes.grading),
-      if (auth.isAdmin && !isSmallScreen)
+      if (isAdmin && !isSmallScreen)
         const _Destination('Users', Icons.group, Routes.users),
-      if (auth.isAdmin)
+      if (isAdmin)
         const _Destination('Game', Icons.tune, Routes.gameSettings),
       const _Destination('Settings', Icons.settings_outlined, Routes.settings),
     ];
@@ -109,12 +112,8 @@ class AppScaffold extends StatelessWidget {
         }
         if (selected < 0) selected = 0;
         
-        // The menu and the content both depend on the role, so show the page
-        // frame with a spinner until it is known, rather than a page that
-        // then changes shape.
-        final bool ready = auth.rolesLoaded;
         // NavBar asserts that it has at least two items.
-        final bool showNav = ready && destinations.length >= 2;
+        final bool showNav = destinations.length >= 2;
         final Widget? floatingButton = floatingActionButton;
         final Widget? headerAction = smallScreenAction ?? floatingButton;
         // NavBar owns the bottom bar, so Scaffold's own floating button slot
@@ -133,7 +132,7 @@ class AppScaffold extends StatelessWidget {
                   constraints: BoxConstraints(
                     maxWidth: fullWidthBody ? double.infinity : _maxContentWidth,
                   ),
-                  child: ready ? body : const LoadingSpinner(),
+                  child: body,
                 ),
               ),
             ),

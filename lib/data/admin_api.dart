@@ -72,10 +72,11 @@ class AdminApiException implements Exception {
 /// Account creation and role assignment happen server-side only. The client
 /// never writes role columns or creates other people's accounts.
 class AdminApi {
-  AdminApi([SupabaseClient? client])
-      : _client = client ?? Supabase.instance.client;
+  AdminApi([this._injected]);
 
-  final SupabaseClient _client;
+  final SupabaseClient? _injected;
+
+  SupabaseClient get _client => _injected ?? Supabase.instance.client;
 
   /// Creates a game and its first admin account.
   ///

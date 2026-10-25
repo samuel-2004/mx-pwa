@@ -28,9 +28,6 @@ String? buildLoginEmail(String username, String gameCode) {
 /// Role flags are read from server rows and only drive UI guards. RLS must
 /// enforce the same rules.
 class SupabaseAuthState extends AuthState {
-  SupabaseAuthState(this._client);
-
-  final supabase.SupabaseClient _client;
   StreamSubscription<supabase.AuthState>? _subscription;
   bool _isSignedIn = false;
   String? _userId;
@@ -52,17 +49,35 @@ class SupabaseAuthState extends AuthState {
   @override
   String? get gameCode => _gameCode;
 
-  bool _rolesLoaded = true;
+  SupabaseAuthState();
+
+  final Completer<void> _initialized = Completer<void>();
+  bool _sessionLoaded = false;
+  bool _rolesLoaded = false;
+
+  // Only read after [initialize] has finished.
+  supabase.SupabaseClient get _client => supabase.Supabase.instance.client;
+
+  @override
+  bool get sessionLoaded => _sessionLoaded;
 
   @override
   bool get rolesLoaded => _rolesLoaded;
 
-  /// Reads the restored session and starts listening for auth changes.
+  /// Starts Supabase, reads the stored session and listens for auth changes.
   ///
-  /// Call once before `runApp`. Returns at once: the session comes from local
-  /// storage and roles load in the background, so check [rolesLoaded] before
-  /// trusting [isAdmin] or [isSubsectionAdmin]. Does not throw.
-  void initialize() {
+  /// [url] and [publishableKey] are the public client values. Call it once,
+  /// after the first frame. The session comes from local storage, so this
+  /// does not wait for the network; roles then load in the background (see
+  /// [rolesLoaded]). Throws whatever `Supabase.initialize` throws.
+  Future<void> initialize({
+    required String url,
+    required String publishableKey,
+  }) async {
+    await supabase.Supabase.initialize(
+      url: url,
+      publishableKey: publishableKey,
+    );
     _applySession(_client.auth.currentSession);
     _subscription = _client.auth.onAuthStateChange.listen(
       (supabase.AuthState data) {
@@ -71,8 +86,24 @@ class SupabaseAuthState extends AuthState {
         _applySession(data.session);
       },
     );
+    _initialized.complete();
     // Optional diagnostic; auth startup must not depend on it.
     if (kDebugMode) unawaited(_logAuthContext());
+  }
+
+  void _applySession(supabase.Session? session) {
+    final String? userId = session?.user.id;
+    final bool changed = userId != _userId || !_sessionLoaded;
+    _isSignedIn = session != null;
+    _userId = userId;
+    _sessionLoaded = true;
+    if (changed) {
+      _roles = _noRoles;
+      _gameCode = null;
+      _rolesLoaded = userId == null;
+      notifyListeners();
+    }
+    if (userId != null) unawaited(_loadProfile(userId));
   }
 
   Future<void> _logAuthContext() async {
@@ -82,29 +113,6 @@ class SupabaseAuthState extends AuthState {
     } on Exception catch (e) {
       debugPrint('Auth context diagnostic failed: $e');
     }
-  }
-
-  @override
-  Future<void> signOut() async {
-    await _client.auth.signOut();
-    _applySession(null);
-  }
-
-  // Publishes who is signed in at once, then loads roles in the background.
-  // The same user firing again (for example a re-sent signedIn) keeps its
-  // loaded roles, so the UI does not flash back to loading.
-  void _applySession(supabase.Session? session) {
-    final String? userId = session?.user.id;
-    final bool changedUser = userId != _userId;
-    _isSignedIn = session != null;
-    _userId = userId;
-    if (changedUser) {
-      _roles = _noRoles;
-      _gameCode = null;
-      _rolesLoaded = userId == null;
-      notifyListeners();
-    }
-    if (userId != null) unawaited(_loadProfile(userId));
   }
 
   Future<void> _loadProfile(String userId) async {
@@ -126,6 +134,7 @@ class SupabaseAuthState extends AuthState {
   }) async {
     final String? email = buildLoginEmail(username, gameCode);
     if (email == null || password.isEmpty) return false;
+    await _initialized.future;
     try {
       await _client.auth.signInWithPassword(email: email, password: password);
       return true;
@@ -136,6 +145,12 @@ class SupabaseAuthState extends AuthState {
       }
       return false;
     }
+  }
+
+  @override
+  Future<void> signOut() async {
+    await _client.auth.signOut();
+    _applySession(null);
   }
 
   @override

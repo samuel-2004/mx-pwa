@@ -21,37 +21,31 @@ import 'settings/app_settings.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   try {
-    runApp(await _initialize());
+    AppConfig.validate();
+    // A quick local read; waiting for it avoids a theme flash.
+    final AppSettings settings = await AppSettings.load();
+    final SupabaseAuthState authState = SupabaseAuthState();
+    final PowerSyncDatabase db = openPowerSync(
+      authState: authState,
+      endpoint: AppConfig.powersyncUrl,
+    );
+    runApp(
+      MxApp(
+        router: createRouter(authState, db),
+        authState: authState,
+        settings: settings,
+      ),
+    );
+    // Only after the first frame is drawn, so nothing stands between the user
+    // and the page.
+    await WidgetsBinding.instance.endOfFrame;
+    await authState.initialize(
+      url: AppConfig.supabaseUrl,
+      publishableKey: AppConfig.supabasePublishableKey,
+    );
   } on Object catch (error) {
     runApp(StartupErrorApp(error: error));
   }
-}
-
-Future<MxApp> _initialize() async {
-  AppConfig.validate();
-
-  // The parameter is still named anonKey; it takes the publishable key.
-  await Supabase.initialize(
-    url: AppConfig.supabaseUrl,
-    publishableKey: AppConfig.supabasePublishableKey,
-  );
-
-  // Reads the stored session locally; roles load in the background.
-  final SupabaseAuthState authState =
-      SupabaseAuthState(Supabase.instance.client)..initialize();
-
-  final PowerSyncDatabase db = openPowerSync(
-    authState: authState,
-    endpoint: AppConfig.powersyncUrl,
-  );
-
-  final AppSettings settings = await AppSettings.load();
-
-  return MxApp(
-    router: createRouter(authState, db),
-    authState: authState,
-    settings: settings,
-  );
 }
 
 /// Root widget. Takes a prebuilt [router] so it is created once, not on

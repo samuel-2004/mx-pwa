@@ -40,14 +40,24 @@ PowerSyncDatabase openPowerSync({
     }),
   );
 
-  final SupabaseConnector connector = SupabaseConnector(endpoint: endpoint);
   bool connected = false;
+  bool watchingTokens = false;
 
   void reconcile() {
     final bool signedIn = authState.isSignedIn;
     if (signedIn == connected) return;
     connected = signedIn;
     if (signedIn) {
+      // Supabase refreshes tokens on its own; PowerSync must pick up the
+      // new one. Registered here because Supabase starts after the first
+      // frame.
+      if (!watchingTokens) {
+        watchingTokens = true;
+        Supabase.instance.client.auth.onAuthStateChange.listen((data) {
+          if (data.event != AuthChangeEvent.tokenRefreshed) return;
+          unawaited(connector.prefetchCredentials());
+        });
+      }
       unawaited(db.connect(connector: connector));
       return;
     }

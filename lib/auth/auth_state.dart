@@ -17,9 +17,14 @@ abstract class AuthState extends ChangeNotifier {
   /// Whether the signed-in user administers at least one subsection.
   bool get isSubsectionAdmin;
 
-  /// Whether [isAdmin] and [isSubsectionAdmin] have been read for the current
-  /// user. False only while a signed-in user's roles are loading, so the role
-  /// flags are not final until it is true.
+  /// Whether the stored session has been read. False only until startup
+  /// finishes, right after the first frame; until then [isSignedIn] only
+  /// means "not known yet".
+  bool get sessionLoaded;
+
+  /// Whether [isAdmin] and [isSubsectionAdmin] are final for the current
+  /// user. False until [sessionLoaded], then while a signed-in user's roles
+  /// load; true when signed out, since there is nothing to load.
   bool get rolesLoaded;
 
   /// The users game code.
