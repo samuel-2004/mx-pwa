@@ -42,6 +42,7 @@ PowerSyncDatabase openPowerSync({
 
   bool connected = false;
   bool watchingTokens = false;
+  final SupabaseConnector connector = SupabaseConnector(endpoint: endpoint);
 
   void reconcile() {
     final bool signedIn = authState.isSignedIn;
