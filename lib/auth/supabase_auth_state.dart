@@ -52,35 +52,70 @@ class SupabaseAuthState extends AuthState {
   @override
   String? get gameCode => _gameCode;
 
-  /// Loads any restored session and starts listening for auth changes.
+  bool _rolesLoaded = true;
+
+  @override
+  bool get rolesLoaded => _rolesLoaded;
+
+  /// Reads the restored session and starts listening for auth changes.
   ///
-  /// Call once before `runApp` so the first route guard sees real state.
-  /// Returns when the initial state is loaded. Does not throw; a failed
-  /// role lookup is treated as no roles.
-  Future<void> initialize() async {
-    await _sync(_client.auth.currentSession);
+  /// Call once before `runApp`. Returns at once: the session comes from local
+  /// storage and roles load in the background, so check [rolesLoaded] before
+  /// trusting [isAdmin] or [isSubsectionAdmin]. Does not throw.
+  void initialize() {
+    _applySession(_client.auth.currentSession);
     _subscription = _client.auth.onAuthStateChange.listen(
       (supabase.AuthState data) {
-        // Refreshes never change who the user is, and the initial session was
-        // already synced above.
-        if (data.event == supabase.AuthChangeEvent.tokenRefreshed ||
-            data.event == supabase.AuthChangeEvent.initialSession) {
-          return;
-        }
-        unawaited(_sync(data.session));
+        // Refreshes fire often and never change who the user is.
+        if (data.event == supabase.AuthChangeEvent.tokenRefreshed) return;
+        _applySession(data.session);
       },
     );
+    // Optional diagnostic; auth startup must not depend on it.
+    if (kDebugMode) unawaited(_logAuthContext());
+  }
 
-
-    // This diagnostic is optional; auth startup must not depend on it.
-    if (kDebugMode) {
-      try {
-        final Object? result = await _client.rpc('debug_auth_context');
-        debugPrint('Auth context: $result');
-      } on Exception catch (e) {
-        debugPrint('Auth context diagnostic failed: $e');
-      }
+  Future<void> _logAuthContext() async {
+    try {
+      final Object? result = await _client.rpc('debug_auth_context');
+      debugPrint('Auth context: $result');
+    } on Exception catch (e) {
+      debugPrint('Auth context diagnostic failed: $e');
     }
+  }
+
+  @override
+  Future<void> signOut() async {
+    await _client.auth.signOut();
+    _applySession(null);
+  }
+
+  // Publishes who is signed in at once, then loads roles in the background.
+  // The same user firing again (for example a re-sent signedIn) keeps its
+  // loaded roles, so the UI does not flash back to loading.
+  void _applySession(supabase.Session? session) {
+    final String? userId = session?.user.id;
+    final bool changedUser = userId != _userId;
+    _isSignedIn = session != null;
+    _userId = userId;
+    if (changedUser) {
+      _roles = _noRoles;
+      _gameCode = null;
+      _rolesLoaded = userId == null;
+      notifyListeners();
+    }
+    if (userId != null) unawaited(_loadProfile(userId));
+  }
+
+  Future<void> _loadProfile(String userId) async {
+    final (_Roles roles, String? gameCode) =
+        await (_loadRoles(userId), diagnoseCurrentUserGameId()).wait;
+    // Signed out, or someone else signed in, while this was loading.
+    if (_userId != userId) return;
+    _roles = roles;
+    _gameCode = gameCode;
+    _rolesLoaded = true;
+    notifyListeners();
   }
 
   @override
@@ -104,29 +139,9 @@ class SupabaseAuthState extends AuthState {
   }
 
   @override
-  Future<void> signOut() async {
-    await _client.auth.signOut();
-    await _sync(null);
-  }
-
-  @override
   void dispose() {
     unawaited(_subscription?.cancel());
     super.dispose();
-  }
-
-  Future<void> _sync(supabase.Session? session) async {
-    final String? userId = session?.user.id;
-    // Resolve roles before publishing, so guards never see a signed-in user
-    // with stale roles. The two lookups do not depend on each other.
-    final (_Roles roles, String? gameId) = userId == null
-        ? (_noRoles, null)
-        : await (_loadRoles(userId), diagnoseCurrentUserGameId()).wait;
-    _isSignedIn = session != null;
-    _userId = userId;
-    _roles = roles;
-    _gameCode = gameId;
-    notifyListeners();
   }
 
   Future<_Roles> _loadRoles(String userId) async {

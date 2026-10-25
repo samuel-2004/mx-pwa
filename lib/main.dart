@@ -36,16 +36,16 @@ Future<MxApp> _initialize() async {
     publishableKey: AppConfig.supabasePublishableKey,
   );
 
+  // Reads the stored session locally; roles load in the background.
   final SupabaseAuthState authState =
-      SupabaseAuthState(Supabase.instance.client);
+      SupabaseAuthState(Supabase.instance.client)..initialize();
 
-  // Independent, so they run together. openPowerSync reacts to the sign-in
-  // state when authState finishes.
-  final (PowerSyncDatabase db, AppSettings settings, _) = await (
-    openPowerSync(authState: authState, endpoint: AppConfig.powersyncUrl),
-    AppSettings.load(),
-    authState.initialize(),
-  ).wait;
+  final PowerSyncDatabase db = openPowerSync(
+    authState: authState,
+    endpoint: AppConfig.powersyncUrl,
+  );
+
+  final AppSettings settings = await AppSettings.load();
 
   return MxApp(
     router: createRouter(authState, db),

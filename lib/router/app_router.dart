@@ -19,6 +19,9 @@ import '../screens/submit_answer_screen.dart';
 import '../screens/users_screen.dart';
 import '../screens/terms_screen.dart';
 import '../screens/score_grid_screen.dart';
+import '../layout/app_scaffold.dart';
+import '../widgets/loading_spinner.dart';
+
 import 'routes.dart';
 
 /// Builds the app router.
@@ -38,27 +41,23 @@ GoRouter createRouter(AuthState authState, PowerSyncDatabase db) {
     return authState.isSignedIn ? null : Routes.login;
   }
 
-  String? adminOnly(BuildContext context, GoRouterState state) {
-    if (!authState.isSignedIn) return Routes.login;
-    return authState.isAdmin ? null : Routes.activities;
+  // Roles load after sign-in. Until they do, a signed-in user is let through
+  // and checked again when they arrive, because the router refreshes on
+  // [authState]. RLS enforces access either way.
+  GoRouterRedirect roleOnly(bool Function() allowed) {
+    return (BuildContext context, GoRouterState state) {
+      if (!authState.isSignedIn) return Routes.login;
+      if (!authState.rolesLoaded) return null;
+      return allowed() ? null : Routes.activities;
+    };
   }
 
-  String? subsectionAdminOnly(BuildContext context, GoRouterState state) {
-    if (!authState.isSignedIn) return Routes.login;
-    return authState.isSubsectionAdmin ? null : Routes.activities;
-  }
-
-  String? playerOnly(BuildContext context, GoRouterState state) {
-    if (!authState.isSignedIn) return Routes.login;
-    return authState.isAdmin ? Routes.activities : null;
-  }
-
-  String? staffOnly(BuildContext context, GoRouterState state) {
-    if (!authState.isSignedIn) return Routes.login;
-    return authState.isAdmin || authState.isSubsectionAdmin
-        ? null
-        : Routes.activities;
-  }
+  final GoRouterRedirect adminOnly = roleOnly(() => authState.isAdmin);
+  final GoRouterRedirect subsectionAdminOnly =
+      roleOnly(() => authState.isSubsectionAdmin);
+  final GoRouterRedirect playerOnly = roleOnly(() => !authState.isAdmin);
+  final GoRouterRedirect staffOnly =
+      roleOnly(() => authState.isAdmin || authState.isSubsectionAdmin);
 
   return GoRouter(
     initialLocation: Routes.login,

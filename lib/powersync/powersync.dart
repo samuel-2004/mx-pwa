@@ -15,13 +15,15 @@ const String _databaseFilename = 'mx_pwa.db';
 /// Opens the local database and ties sync to the auth session.
 ///
 /// [authState] decides when to connect (signed in) and disconnect (signed
-/// out). [endpoint] is the PowerSync instance URL. Returns the initialized
-/// database. Throws [UnsupportedError] outside web (native needs a file path
-/// from `path_provider`), and rethrows any failure to open the database.
-Future<PowerSyncDatabase> openPowerSync({
+/// out). [endpoint] is the PowerSync instance URL. Returns the database
+/// before it has finished opening; PowerSync opens it on its own and queries
+/// and `connect` wait for that. An opening failure is logged and shows up as
+/// query errors. Throws [UnsupportedError] outside web (native needs a file
+/// path from `path_provider`).
+PowerSyncDatabase openPowerSync({
   required AuthState authState,
   required String endpoint,
-}) async {
+}) {
   if (!kIsWeb) {
     throw UnsupportedError('PowerSync is only wired up for web.');
   }
@@ -31,7 +33,12 @@ Future<PowerSyncDatabase> openPowerSync({
     path: _databaseFilename,
     logger: autoLogger,
   );
-  await db.initialize();
+  // Not awaited: this only reports a failure to open.
+  unawaited(
+    db.initialize().catchError((Object error, StackTrace stack) {
+      db.logger.severe('Opening the local database failed', error, stack);
+    }),
+  );
 
   final SupabaseConnector connector = SupabaseConnector(endpoint: endpoint);
   bool connected = false;

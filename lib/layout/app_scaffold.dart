@@ -10,6 +10,7 @@ import '../orient_ui/style.dart';
 import '../orient_ui/tappable_icon.dart';
 import '../router/routes.dart';
 import '../widgets/surface_card.dart';
+import '../widgets/loading_spinner.dart';
 
 const double _minPageSide = 50;
 const double _maxContentWidth = 900;
@@ -107,8 +108,13 @@ class AppScaffold extends StatelessWidget {
           );
         }
         if (selected < 0) selected = 0;
+        
+        // The menu and the content both depend on the role, so show the page
+        // frame with a spinner until it is known, rather than a page that
+        // then changes shape.
+        final bool ready = auth.rolesLoaded;
         // NavBar asserts that it has at least two items.
-        final bool showNav = destinations.length >= 2;
+        final bool showNav = ready && destinations.length >= 2;
         final Widget? floatingButton = floatingActionButton;
         final Widget? headerAction = smallScreenAction ?? floatingButton;
         // NavBar owns the bottom bar, so Scaffold's own floating button slot
@@ -123,7 +129,12 @@ class AppScaffold extends StatelessWidget {
                 constraints: BoxConstraints(
                   maxWidth: fullWidthBody ? double.infinity : _maxContentWidth,
                 ),
-                child: body,
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    maxWidth: fullWidthBody ? double.infinity : _maxContentWidth,
+                  ),
+                  child: ready ? body : const LoadingSpinner(),
+                ),
               ),
             ),
             if (floatingButton != null && !isSmallScreen)

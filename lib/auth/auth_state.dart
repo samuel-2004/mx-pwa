@@ -17,6 +17,11 @@ abstract class AuthState extends ChangeNotifier {
   /// Whether the signed-in user administers at least one subsection.
   bool get isSubsectionAdmin;
 
+  /// Whether [isAdmin] and [isSubsectionAdmin] have been read for the current
+  /// user. False only while a signed-in user's roles are loading, so the role
+  /// flags are not final until it is true.
+  bool get rolesLoaded;
+
   /// The users game code.
   String? get gameCode;
 
