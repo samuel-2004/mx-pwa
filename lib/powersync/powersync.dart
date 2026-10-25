@@ -70,11 +70,5 @@ PowerSyncDatabase openPowerSync({
   authState.addListener(reconcile);
   reconcile();
 
-  // Supabase refreshes tokens on its own; PowerSync must pick up the new one.
-  Supabase.instance.client.auth.onAuthStateChange.listen((data) {
-    if (data.event != AuthChangeEvent.tokenRefreshed) return;
-    unawaited(connector.prefetchCredentials());
-  });
-
   return db;
 }
