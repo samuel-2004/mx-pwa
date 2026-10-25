@@ -103,7 +103,9 @@ class SupabaseAuthState extends AuthState {
       _rolesLoaded = userId == null;
       notifyListeners();
     }
-    if (userId != null) unawaited(_loadProfile(userId));
+    if (changed && userId != null) {
+      unawaited(_loadProfile(userId));
+    }
   }
 
   Future<void> _logAuthContext() async {
@@ -116,13 +118,19 @@ class SupabaseAuthState extends AuthState {
   }
 
   Future<void> _loadProfile(String userId) async {
-    final (_Roles roles, String? gameCode) =
-        await (_loadRoles(userId), diagnoseCurrentUserGameId()).wait;
-    // Signed out, or someone else signed in, while this was loading.
+    final _Roles roles = await _loadRoles(userId);
+
     if (_userId != userId) return;
+
     _roles = roles;
-    _gameCode = gameCode;
     _rolesLoaded = true;
+    notifyListeners();
+
+    final String? gameCode = await diagnoseCurrentUserGameId();
+
+    if (_userId != userId) return;
+
+    _gameCode = gameCode;
     notifyListeners();
   }
 
@@ -161,23 +169,12 @@ class SupabaseAuthState extends AuthState {
 
   Future<_Roles> _loadRoles(String userId) async {
     try {
-      final (
-        Map<String, dynamic>? user,
-        List<Map<String, dynamic>> grants,
-      ) = await (
-        _client
-            .from('users')
-            .select('is_admin, is_subsection_admin')
-            .eq('id', userId)
-            .isFilter('deleted_at', null)
-            .maybeSingle(),
-        _client
-            .from('subsection_admins')
-            .select('subsection_id')
-            .eq('user_id', userId)
-            .isFilter('deleted_at', null)
-            .limit(1),
-      ).wait;
+      final Map<String, dynamic>? user = await _client
+        .from('users')
+        .select('is_admin, is_subsection_admin')
+        .eq('id', userId)
+        .isFilter('deleted_at', null)
+        .maybeSingle();
 
       // postgresql sanity check
       bool isTrue(dynamic value) {
@@ -186,7 +183,7 @@ class SupabaseAuthState extends AuthState {
 
       return (
         isAdmin: user != null && (isTrue(user['is_admin'])),
-        isSubsectionAdmin: grants.isNotEmpty,
+        isSubsectionAdmin: user != null && isTrue(user['is_subsection_admin']),
       );
     // wait() reports failures as a ParallelWaitError, not the original
     // exception, so catch Object to keep failing closed.

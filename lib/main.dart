@@ -2,7 +2,6 @@ import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:powersync/powersync.dart' show PowerSyncDatabase;
-import 'package:supabase_flutter/supabase_flutter.dart' show Supabase;
 import 'package:flutter_localizations/flutter_localizations.dart';
 // Narrowed so flutter_quill's own `Style` cannot clash with Orient UI's.
 import 'package:flutter_quill/flutter_quill.dart' show FlutterQuillLocalizations;

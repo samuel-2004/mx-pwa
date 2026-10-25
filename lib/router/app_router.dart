@@ -66,9 +66,7 @@ GoRouter createRouter(AuthState authState, PowerSyncDatabase db) {
   Widget gated(String title, String loading, Widget Function() screen) {
     return ListenableBuilder(
       listenable: authState,
-      builder: (BuildContext context, Widget? _) => authState.rolesLoaded
-          ? screen()
-          : AppScaffold(title: title, body: LoadingSpinner(message: loading)),
+      builder: (BuildContext context, Widget? _) => screen(),
     );
   }
 
