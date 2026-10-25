@@ -91,7 +91,6 @@ class _GeoAnswerFieldState extends State<GeoAnswerField> {
     final TypographyTokens typography = context.typography;
     final GeoPoint? point = widget.value;
     final String? message = widget.message;
-    final Color color = Theme.of(context).colorScheme.primary;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       spacing: 8,

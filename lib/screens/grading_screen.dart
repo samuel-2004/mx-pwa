@@ -1,6 +1,5 @@
 import 'dart:typed_data';
 import 'dart:async' show Timer;
-import 'dart:typed_data';
 
 import 'package:flutter/foundation.dart' show debugPrint, kDebugMode;
 import 'package:flutter/material.dart';
