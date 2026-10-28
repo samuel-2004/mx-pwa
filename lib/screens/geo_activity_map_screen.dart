@@ -38,7 +38,7 @@ class GeoActivityMapScreen extends StatefulWidget {
 class _GeoActivityMapScreenState extends State<GeoActivityMapScreen> {
   late final Stream<GeoActivityData> _data = watchGeoActivityData(widget.db);
 
-  Set<String>? _selectedParticipantIds;
+  Set<String> _selectedParticipantIds = <String>{};
   bool _showActivityLocations = true;
   bool _showSubmissionPoints = true;
   bool _showActivityLinks = true;
@@ -314,18 +314,21 @@ class _GeoActivityMapScreenState extends State<GeoActivityMapScreen> {
         Row(
           children: <Widget>[
             Expanded(
-              child: Text('Participants', style: style.typography.title),
+              child: Text('Participant Routes', style: style.typography.title),
             ),
-            Button.small(
-              label: allSelected ? 'Clear' : 'All',
-              variant: ButtonVariant.ghost,
-              onPressed: data.participants.isEmpty
-                  ? null
-                  : () => _updateControl(
-                      () => _selectedParticipantIds =
-                          allSelected ? <String>{} : null,
-                      popupSetState,
-                    ),
+            SizedBox(
+              width: 64,
+              child: Button.small(
+                label: allSelected ? 'Clear' : 'All',
+                variant: ButtonVariant.outline,
+                onPressed: data.participants.isEmpty
+                    ? null
+                    : () => _updateControl(
+                        () => _selectedParticipantIds =
+                            allSelected ? <String>{} : Set<String>.of(allIds),
+                        popupSetState,
+                      ),
+              ),
             ),
           ],
         ),
@@ -348,7 +351,6 @@ class _GeoActivityMapScreenState extends State<GeoActivityMapScreen> {
                     onChanged: (bool value) => _setParticipantSelected(
                       participant.id,
                       value,
-                      allIds,
                       popupSetState,
                     ),
                   ),
@@ -406,13 +408,10 @@ class _GeoActivityMapScreenState extends State<GeoActivityMapScreen> {
   void _setParticipantSelected(
     String id,
     bool selected,
-    Set<String> allIds,
     StateSetter? popupSetState,
   ) {
     _updateControl(() {
-      final Set<String> next = _selectedParticipantIds == null
-          ? Set<String>.of(allIds)
-          : Set<String>.of(_selectedParticipantIds!);
+      final Set<String> next = Set<String>.of(_selectedParticipantIds);
       if (selected) {
         next.add(id);
       } else {
@@ -422,11 +421,10 @@ class _GeoActivityMapScreenState extends State<GeoActivityMapScreen> {
     }, popupSetState);
   }
 
-  Set<String> _selectedIds(GeoActivityData data) =>
-      _selectedParticipantIds ??
-      data.participants
-          .map((GeoParticipant participant) => participant.id)
-          .toSet();
+  Set<String> _selectedIds(GeoActivityData data) => <String>{
+      for (final GeoParticipant participant in data.participants)
+        if (_selectedParticipantIds.contains(participant.id)) participant.id,
+    };
 
   Map<String, Color> _participantColors(List<GeoParticipant> participants) {
     return <String, Color>{

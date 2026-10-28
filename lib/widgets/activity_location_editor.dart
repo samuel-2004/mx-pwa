@@ -7,6 +7,7 @@ import '../data/geo.dart' show GeoPoint;
 import '../orient_ui/button.dart';
 import '../orient_ui/info_banner.dart';
 import '../orient_ui/style.dart';
+import '../orient_ui/toggle_tile.dart';
 import 'geo_map.dart';
 
 /// Sets where an activity is. Players see this location on their map.
@@ -14,6 +15,8 @@ import 'geo_map.dart';
 /// [value] is the current location, or null for none. [onChanged] receives
 /// the new location, or null when it is cleared. Tapping the map or using the
 /// device location sets it, with the longitude wrapped into -180 to 180.
+/// The toggle shows or hides this editor, including its map, and never
+/// changes [value].
 class ActivityLocationEditor extends StatefulWidget {
   const ActivityLocationEditor({
     required this.value,
@@ -29,8 +32,12 @@ class ActivityLocationEditor extends StatefulWidget {
 }
 
 class _ActivityLocationEditorState extends State<ActivityLocationEditor> {
+  // Starts on when a location is already saved, so it is never hidden.
+  late bool _enabled = widget.value != null;
   bool _locating = false;
   String? _error;
+
+  void _setEnabled(bool enabled) => setState(() => _enabled = enabled);
 
   void _pick(LatLng point) => widget.onChanged(
         normalisePin((lat: point.latitude, lng: point.longitude)),
@@ -57,11 +64,17 @@ class _ActivityLocationEditorState extends State<ActivityLocationEditor> {
   Widget build(BuildContext context) {
     final TypographyTokens typography = context.typography;
     final NotePin? point = widget.value;
+    final Widget toggle = ToggleTile(
+      title: 'Show an activity location to players',
+      value: _enabled,
+      onChanged: _setEnabled,
+    );
+    if (!_enabled) return toggle;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       spacing: 8,
       children: <Widget>[
-        Text('Location shown to players', style: typography.body.w600),
+        toggle,
         Text(
           point == null
               ? 'No location set. Players will not see this activity on '
@@ -72,7 +85,7 @@ class _ActivityLocationEditorState extends State<ActivityLocationEditor> {
         ),
         if (_error != null)
           InfoBanner(title: _error!, variant: InfoBannerVariant.error),
-        Wrap(
+                Wrap(
           spacing: 8,
           runSpacing: 8,
           children: <Widget>[
