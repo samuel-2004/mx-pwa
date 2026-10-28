@@ -702,7 +702,7 @@ class _SectionTile extends StatelessWidget {
                 onPressed: onRename,
               ),
               Button.small(
-                label: 'Delete subsection',
+                label: 'Delete activity section',
                 icon: const Icon(Icons.delete_outline),
                 variant: ButtonVariant.outline,
                 onPressed: onDelete,

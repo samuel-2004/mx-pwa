@@ -107,7 +107,7 @@ class _Collector {
     final String name = _clean(rawName);
     final String? error = validateSubsectionName(name);
     if (error != null) {
-      throw ImportFormatException('Subsection "$name": $error');
+      throw ImportFormatException('Activity section "$name": $error');
     }
     final String storedDescription =
         descriptionJson ?? _descriptionJson(description);
