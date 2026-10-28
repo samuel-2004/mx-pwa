@@ -34,6 +34,8 @@ import '../router/routes.dart';
 // The ceiling when an activity has no points set.
 const int _maxPoints = 2147483647;
 const String _allSubsections = '';
+// Width of the filter panel on wide screens.
+const double _sidePanelWidth = 300;
 
 enum _ActivityTypeFilter {
   all(null, 'All types'),
@@ -172,7 +174,7 @@ class _GradingScreenState extends State<GradingScreen> {
                       value: _subsectionFilter,
                       items: <String>[_allSubsections, ...subsections],
                       itemLabel: (String value) => value.isEmpty
-                          ? 'All subsections'
+                          ? 'All activity sections'
                           : value,
                       onChanged: (String value) => setState(() {
                         _subsectionFilter = value;
@@ -333,43 +335,93 @@ class _GradingScreenState extends State<GradingScreen> {
               onPressed: () => context.go(Routes.scoreGrid),
             )
           : null,
-      body: NotificationListener<ScrollNotification>(
-        onNotification: (ScrollNotification notification) =>
-            _onScrollNotification(notification, isSmallScreen),
-        child: Column(
-          children: <Widget>[
-            AnimatedSize(
-              alignment: Alignment.topCenter,
-              duration: const Duration(milliseconds: 180),
-              curve: Curves.easeInOut,
-              child: _showFilters
-                  ? Column(
-                      children: <Widget>[
-                        PageContent(
-                          child: Padding(
-                            padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
-                            child: ToggleTile(
-                              title: 'Show graded',
-                              value: _includeGraded,
-                              onChanged: (bool on) {
-                                _includeGraded = on;
-                                _refresh();
-                              },
-                            ),
-                          ),
-                        ),
-                        if (!_loading &&
-                            _loadError == null &&
-                            (_items?.isNotEmpty ?? false))
-                          PageContent(child: _filters(_items!)),
-                      ],
-                    )
-                  : const SizedBox.shrink(),
-            ),
-            Expanded(child: _body()),
-          ],
-        ),
+      body: LayoutBuilder(
+        builder: (BuildContext context, BoxConstraints constraints) {
+          // Leaves the list at least the desktop breakpoint's width.
+          final bool showSidePanel =
+              constraints.maxWidth >= Style.breakpoints.desktop + _sidePanelWidth;
+          return showSidePanel
+              ? _sidePanelLayout(context)
+              : _stackedLayout(isSmallScreen: isSmallScreen);
+        },
       ),
+    );
+  }
+
+  /// The "Show graded" switch and the filter fields, stacked.
+  ///
+  /// Reads the loaded answers to list subsections. Returns the column. Does
+  /// not throw.
+  Widget _filterControls() {
+    final List<GradingItem> items = _items ?? const <GradingItem>[];
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        Padding(
+          padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+          child: ToggleTile(
+            title: 'Show graded',
+            value: _includeGraded,
+            onChanged: (bool on) {
+              _includeGraded = on;
+              _refresh();
+            },
+          ),
+        ),
+        // Kept while reloading, so the panel does not jump.
+        if (_loadError == null && items.isNotEmpty) _filters(items),
+      ],
+    );
+  }
+
+  /// Filters above the list, hiding on scroll for small screens.
+  ///
+  /// [isSmallScreen] enables the hide-on-scroll behavior. Returns the layout.
+  /// Does not throw.
+  Widget _stackedLayout({required bool isSmallScreen}) {
+    return NotificationListener<ScrollNotification>(
+      onNotification: (ScrollNotification notification) =>
+          _onScrollNotification(notification, isSmallScreen),
+      child: Column(
+        children: <Widget>[
+          AnimatedSize(
+            alignment: Alignment.topCenter,
+            duration: const Duration(milliseconds: 180),
+            curve: Curves.easeInOut,
+            child: _showFilters
+                ? PageContent(child: _filterControls())
+                : const SizedBox.shrink(),
+          ),
+          Expanded(child: _body()),
+        ],
+      ),
+    );
+  }
+
+  /// Filters in a fixed panel on the left, with the list beside it.
+  ///
+  /// [context] supplies the style tokens. Returns the layout. Does not throw.
+  Widget _sidePanelLayout(BuildContext context) {
+    final ColorTokens colors = context.style.colors;
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        SizedBox(
+          width: _sidePanelWidth,
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: colors.background,
+              border: Border(right: BorderSide(color: colors.border)),
+            ),
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.only(bottom: 16),
+              child: _filterControls(),
+            ),
+          ),
+        ),
+        Expanded(child: _body()),
+      ],
     );
   }
 }
