@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' show pi;
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -30,6 +31,32 @@ String _formatLocal(DateTime utc) {
   final DateTime t = utc.toLocal();
   String two(int n) => n.toString().padLeft(2, '0');
   return '${t.year}-${two(t.month)}-${two(t.day)} ${two(t.hour)}:${two(t.minute)}';
+}
+
+// Tilt of the color edges from vertical. Set in radians.
+const double _tagTilt = 30 * pi / 180;
+// Share of the width where the card color takes over.
+const double _tagReach = 0.5;
+// Tag colors are laid over the card color at this strength, because full
+// strength makes the title hard to read.
+const double _tagTint = 0.35;
+
+LinearGradient? _tagGradient(BuildContext context, List<ActivityTag> tags) {
+  if (tags.isEmpty) return null;
+  final Color base = context.style.colors.background;
+  return LinearGradient(
+    begin: Alignment.centerLeft,
+    end: Alignment.centerRight,
+    transform: const GradientRotation(_tagTilt),
+    colors: <Color>[
+      for (final ActivityTag tag in tags)
+        Color.alphaBlend(tagColor(tag.color).withValues(alpha: _tagTint), base),
+      base,
+    ],
+    stops: <double>[
+      for (int i = 0; i <= tags.length; i++) i * _tagReach / tags.length,
+    ],
+  );
 }
 
 /// Activity list grouped by subsection. Players see their submission state;
@@ -434,6 +461,7 @@ class _ActivityTile extends StatelessWidget {
     }
 
     final TileCard tile = TileCard(
+      gradient: _tagGradient(context, item.tags),
       leading: Icon(icon),
       title: item.name,
       subtitle: status,

@@ -25,17 +25,23 @@ class SurfaceCard extends StatelessWidget {
   const SurfaceCard({
     required this.child,
     this.padding = const EdgeInsets.all(16),
+    this.gradient,
     super.key,
   });
 
   final Widget child;
   final EdgeInsetsGeometry padding;
 
+  /// Painted over the card color. Null leaves the card plain.
+  /// Used with the player's tags' colours.
+  final Gradient? gradient;
+
   @override
   Widget build(BuildContext context) {
     return DecoratedBox(
       decoration: BoxDecoration(
         color: context.style.colors.background,
+        gradient: gradient,
         borderRadius: BorderRadius.circular(Style.radii.medium),
         boxShadow: <BoxShadow>[
           BoxShadow(
@@ -59,6 +65,7 @@ class SurfaceCard extends StatelessWidget {
 class TileCard extends StatelessWidget {
   const TileCard({
     required this.title,
+    this.gradient,
     this.leading,
     this.subtitle,
     this.trailing,
@@ -77,6 +84,7 @@ class TileCard extends StatelessWidget {
   final TileVariant variant;
   final EdgeInsetsGeometry margin;
   final Widget? footer;
+  final Gradient? gradient;
 
   @override
   Widget build(BuildContext context) {
@@ -84,6 +92,7 @@ class TileCard extends StatelessWidget {
       padding: margin,
       child: SurfaceCard(
         padding: EdgeInsets.zero,
+        gradient: gradient,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
