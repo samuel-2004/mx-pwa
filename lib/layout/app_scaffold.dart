@@ -2,9 +2,11 @@ import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart' show ScrollDirection;
 import 'package:go_router/go_router.dart';
+import 'package:powersync/powersync.dart' show PowerSyncDatabase;
 
 import '../auth/auth_scope.dart';
 import '../auth/auth_state.dart';
+import '../data/game_settings.dart';
 import '../orient_ui/nav_bar.dart';
 import '../orient_ui/style.dart';
 import '../orient_ui/tappable_icon.dart';
@@ -63,21 +65,22 @@ class AppScaffold extends StatelessWidget {
 
   // Mirrors the route guards. The server must enforce the same rules.
   List<_Destination> _destinationsFor(
-    AuthState auth, {
+  AuthState auth, {
     required bool isSmallScreen,
+    required bool showScoreboard,
   }) {
-    // Until the roles are known the menu assumes an admin. It is only labels:
-    // every screen behind it waits for the real roles, and RLS enforces
-    // access.
     final bool isAdmin = auth.isAdmin || !auth.rolesLoaded;
     final bool isStaff = isAdmin || auth.isSubsectionAdmin;
+
     return <_Destination>[
       if (!auth.isSubsectionAdmin)
         const _Destination('Activities', Icons.list_alt, Routes.activities),
       if (isAdmin)
         const _Destination('Map', Icons.map_outlined, Routes.geoMap),
-      const _Destination('Scoreboard', Icons.leaderboard, Routes.scoreboard),
-      if (isStaff) const _Destination('Grading', Icons.grading, Routes.grading),
+      if (isAdmin || showScoreboard)
+        const _Destination('Scoreboard', Icons.leaderboard, Routes.scoreboard),
+      if (isStaff)
+        const _Destination('Grading', Icons.grading, Routes.grading),
       if (isAdmin && !isSmallScreen)
         const _Destination('Users', Icons.group, Routes.users),
       if (isAdmin)
@@ -91,98 +94,107 @@ class AppScaffold extends StatelessWidget {
     final AuthState auth = AuthScope.of(context);
     final String path = GoRouterState.of(context).uri.path;
 
-    return LayoutBuilder(
-      builder: (BuildContext context, BoxConstraints constraints) {
-        // A resize can briefly hand the page a ~1x1 box.
-        final bool isSmallScreen =
-            constraints.maxWidth < Style.breakpoints.desktop;
-        final List<_Destination> destinations = _destinationsFor(
-          auth,
-          isSmallScreen: isSmallScreen,
-        );
-        int selected = destinations.indexWhere(
-          (_Destination d) => path == d.path || path.startsWith('${d.path}/'),
-        );
-        // Users is opened from the scoreboard on mobile, so keep Scores
-        // selected while that contextual screen is visible.
-        if (selected < 0 && isSmallScreen && path == Routes.users) {
-          selected = destinations.indexWhere(
-            (_Destination d) => d.path == Routes.scoreboard,
-          );
-        }
-        if (selected < 0) selected = 0;
-        
-        // NavBar asserts that it has at least two items.
-        final bool showNav = destinations.length >= 2;
-        final Widget? floatingButton = floatingActionButton;
-        final Widget? headerAction = smallScreenAction ?? floatingButton;
-        // NavBar owns the bottom bar, so Scaffold's own floating button slot
-        // would sit on top of it. Placing the button inside the content area
-        // keeps it clear of the bar.
-        final Widget content = Stack(
-          fit: StackFit.expand,
-          children: <Widget>[
-            Align(
-              alignment: Alignment.topCenter,
-              child: ConstrainedBox(
-                constraints: BoxConstraints(
-                  maxWidth: fullWidthBody ? double.infinity : _maxContentWidth,
-                ),
-                child: ConstrainedBox(
-                  constraints: BoxConstraints(
-                    maxWidth: fullWidthBody ? double.infinity : _maxContentWidth,
+    return StreamBuilder<GameSettings?>(
+      stream: watchGameSettings(AuthScope.databaseOf(context)),
+      builder: (BuildContext context, AsyncSnapshot<GameSettings?> snapshot) {
+        final bool showScoreboard =
+            snapshot.data?.options['show_scoreboard'] == true;
+
+        return LayoutBuilder(
+          builder: (BuildContext context, BoxConstraints constraints) {
+            // A resize can briefly hand the page a ~1x1 box.
+            final bool isSmallScreen =
+                constraints.maxWidth < Style.breakpoints.desktop;
+            final List<_Destination> destinations = _destinationsFor(
+              auth,
+              isSmallScreen: isSmallScreen,
+              showScoreboard: showScoreboard,
+            );
+            int selected = destinations.indexWhere(
+              (_Destination d) => path == d.path || path.startsWith('${d.path}/'),
+            );
+            // Users is opened from the scoreboard on mobile, so keep Scores
+            // selected while that contextual screen is visible.
+            if (selected < 0 && isSmallScreen && path == Routes.users) {
+              selected = destinations.indexWhere(
+                (_Destination d) => d.path == Routes.scoreboard,
+              );
+            }
+            if (selected < 0) selected = 0;
+            
+            // NavBar asserts that it has at least two items.
+            final bool showNav = destinations.length >= 2;
+            final Widget? floatingButton = floatingActionButton;
+            final Widget? headerAction = smallScreenAction ?? floatingButton;
+            // NavBar owns the bottom bar, so Scaffold's own floating button slot
+            // would sit on top of it. Placing the button inside the content area
+            // keeps it clear of the bar.
+            final Widget content = Stack(
+              fit: StackFit.expand,
+              children: <Widget>[
+                Align(
+                  alignment: Alignment.topCenter,
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(
+                      maxWidth: fullWidthBody ? double.infinity : _maxContentWidth,
+                    ),
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(
+                        maxWidth: fullWidthBody ? double.infinity : _maxContentWidth,
+                      ),
+                      child: body,
+                    ),
                   ),
-                  child: body,
                 ),
+                if (floatingButton != null && !isSmallScreen)
+                  Positioned(
+                    right: _floatingButtonInset,
+                    bottom: _floatingButtonInset,
+                    child: floatingButton,
+                  ),
+              ],
+            );
+            final List<Widget> appBarActions = <Widget>[
+              ...actions,
+              if (isSmallScreen && headerAction != null) headerAction,
+              if (kDebugMode)
+                TappableIcon(
+                  icon: const Icon(Icons.bug_report_outlined),
+                  tooltip: 'Diagnostics',
+                  onPressed: () => context.go(Routes.diagnostics),
+                ),
+              if (kDebugMode) const SizedBox(width: 8),
+            ];
+            return Offstage(
+              offstage: constraints.biggest.shortestSide < _minPageSide,
+              child: ScrollAwareScaffold(
+                isSmallScreen: isSmallScreen,
+                resetKey: path,
+                title: title,
+                actions: appBarActions,
+                backgroundColor: pageBackground(context),
+                body: showNav
+                    ? NavBar(
+                        currentIndex: selected,
+                        onTap: (int index) => context.go(destinations[index].path),
+                        items: <NavBarItem>[
+                          for (final _Destination d in destinations)
+                            NavBarItem(
+                              icon: Icon(d.icon),
+                              label: isSmallScreen && d.path == Routes.scoreboard
+                                  ? 'Scores'
+                                  : d.label,
+                            ),
+                        ],
+                        railFooterIndex: destinations.length - 1,
+                        body: content,
+                      )
+                    : content,
               ),
-            ),
-            if (floatingButton != null && !isSmallScreen)
-              Positioned(
-                right: _floatingButtonInset,
-                bottom: _floatingButtonInset,
-                child: floatingButton,
-              ),
-          ],
+            );
+          }
         );
-        final List<Widget> appBarActions = <Widget>[
-          ...actions,
-          if (isSmallScreen && headerAction != null) headerAction,
-          if (kDebugMode)
-            TappableIcon(
-              icon: const Icon(Icons.bug_report_outlined),
-              tooltip: 'Diagnostics',
-              onPressed: () => context.go(Routes.diagnostics),
-            ),
-          if (kDebugMode) const SizedBox(width: 8),
-        ];
-        return Offstage(
-          offstage: constraints.biggest.shortestSide < _minPageSide,
-          child: ScrollAwareScaffold(
-            isSmallScreen: isSmallScreen,
-            resetKey: path,
-            title: title,
-            actions: appBarActions,
-            backgroundColor: pageBackground(context),
-            body: showNav
-                ? NavBar(
-                    currentIndex: selected,
-                    onTap: (int index) => context.go(destinations[index].path),
-                    items: <NavBarItem>[
-                      for (final _Destination d in destinations)
-                        NavBarItem(
-                          icon: Icon(d.icon),
-                          label: isSmallScreen && d.path == Routes.scoreboard
-                              ? 'Scores'
-                              : d.label,
-                        ),
-                    ],
-                    railFooterIndex: destinations.length - 1,
-                    body: content,
-                  )
-                : content,
-          ),
-        );
-      }
+      },
     );
   }
 }

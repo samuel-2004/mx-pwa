@@ -28,6 +28,7 @@ class ActivityListItem {
     required this.tags,
     required this.suburb,
     required this.pin,
+    required this.location,
   });
 
   final String id;
@@ -53,6 +54,9 @@ class ActivityListItem {
 
   /// Where the caller dropped a pin on this activity, or null.
   final NotePin? pin;
+
+  /// The activities location, or null.
+  final NotePin? location;
 
   /// Returns the release time if it is still in the future at [now], else
   /// null (already open or never gated).
@@ -105,7 +109,9 @@ SELECT
   ) AS pin_lat,
   (SELECT n.lng FROM user_activity_notes n
     WHERE n.activity_id = a.id AND n.user_id = ?
-  ) AS pin_lng
+  ) AS pin_lng,
+  a.location_lat AS loc_lat,
+  a.location_lng AS loc_lng
 FROM activities a
 LEFT JOIN subsections s ON s.id = a.subsection_id AND s.deleted_at IS NULL
 LEFT JOIN games g ON g.id = a.game_id
@@ -162,7 +168,8 @@ Stream<List<ActivityListItem>> watchActivities(
             latestPoints: row['latest_points'] as int?,
             tags: parseTags(row['tags'] as String?),
             suburb: row['suburb'] as String?,
-            pin: _pinFrom(row['pin_lat'], row['pin_lng']),
+            pin: _latLngFrom(row['pin_lat'], row['pin_lng']),
+            location: _latLngFrom(row['loc_lat'], row['loc_lng']),
           ),
     ];
   });
@@ -178,8 +185,54 @@ DateTime? releaseAt(String? startsAt, int offsetMinutes) {
 ///
 /// [lat] and [lng] are raw column values. Returns null unless both are
 /// numbers forming a valid position. Does not throw.
-NotePin? _pinFrom(Object? lat, Object? lng) {
+NotePin? _latLngFrom(Object? lat, Object? lng) {
   if (lat is! num || lng is! num) return null;
   if (!isValidLatLng(lat.toDouble(), lng.toDouble())) return null;
   return (lat: lat.toDouble(), lng: lng.toDouble());
+}
+
+/// Drops the activities outside their game's schedule window.
+///
+/// [items] the activities to check. [now] the current time.
+/// [canViewOutsideGameWindow] is true for staff, who see everything. Returns
+/// the remaining activities in their order. Does not throw.
+List<ActivityListItem> availableActivities(
+  List<ActivityListItem> items, {
+  required DateTime now,
+  required bool canViewOutsideGameWindow,
+}) {
+  if (canViewOutsideGameWindow) return items;
+  return <ActivityListItem>[
+    for (final ActivityListItem item in items)
+      if (item.gameWindowIsOpenAt(now)) item,
+  ];
+}
+
+/// Lists the distinct tag names on [items], sorted without regard to case.
+///
+/// [items] the activities to read tags from. Returns the names. Does not
+/// throw.
+List<String> tagNames(List<ActivityListItem> items) {
+  final Set<String> names = <String>{
+    for (final ActivityListItem item in items)
+      for (final ActivityTag tag in item.tags) tag.name,
+  };
+  return names.toList()
+    ..sort((String a, String b) => a.toLowerCase().compareTo(b.toLowerCase()));
+}
+
+/// Keeps the activities that have at least one tag named in [active].
+///
+/// [items] the activities to filter. [active] the chosen tag names; empty
+/// keeps everything. Returns the matching activities in their order. Does not
+/// throw.
+List<ActivityListItem> filterByTags(
+  List<ActivityListItem> items,
+  Set<String> active,
+) {
+  if (active.isEmpty) return items;
+  return <ActivityListItem>[
+    for (final ActivityListItem item in items)
+      if (item.tags.any((ActivityTag tag) => active.contains(tag.name))) item,
+  ];
 }

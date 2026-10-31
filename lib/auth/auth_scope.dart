@@ -1,4 +1,5 @@
 import 'package:flutter/widgets.dart';
+import 'package:powersync/powersync.dart' show PowerSyncDatabase;
 
 import 'auth_state.dart';
 
@@ -7,13 +8,13 @@ import 'auth_state.dart';
 class AuthScope extends InheritedNotifier<AuthState> {
   const AuthScope({
     required AuthState authState,
+    required this.db,
     required super.child,
     super.key,
   }) : super(notifier: authState);
 
-  /// Returns the nearest [AuthState] and subscribes [context] to it.
-  ///
-  /// Throws [StateError] if no [AuthScope] is above [context].
+  final PowerSyncDatabase db;
+
   static AuthState of(BuildContext context) {
     final AuthScope? scope =
         context.dependOnInheritedWidgetOfExactType<AuthScope>();
@@ -22,5 +23,14 @@ class AuthScope extends InheritedNotifier<AuthState> {
       throw StateError('No AuthScope found above this context.');
     }
     return authState;
+  }
+
+  static PowerSyncDatabase databaseOf(BuildContext context) {
+    final AuthScope? scope =
+        context.dependOnInheritedWidgetOfExactType<AuthScope>();
+    if (scope == null) {
+      throw StateError('No AuthScope found above this context.');
+    }
+    return scope.db;
   }
 }

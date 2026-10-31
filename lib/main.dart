@@ -33,6 +33,7 @@ Future<void> main() async {
         router: createRouter(authState, db),
         authState: authState,
         settings: settings,
+        db: db,
       ),
     );
     // Only after the first frame is drawn, so nothing stands between the user
@@ -54,17 +55,20 @@ class MxApp extends StatelessWidget {
     required this.router,
     required this.authState,
     required this.settings,
+    required this.db,
     super.key,
   });
 
   final GoRouter router;
   final AuthState authState;
   final AppSettings settings;
+  final PowerSyncDatabase db;
 
   @override
   Widget build(BuildContext context) {
     return AuthScope(
       authState: authState,
+      db: db,
       child: AppSettingsScope(
         settings: settings,
         child: ListenableBuilder(
