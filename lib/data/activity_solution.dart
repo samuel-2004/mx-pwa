@@ -70,4 +70,28 @@ class ActivitySolutionApi {
       throw SolutionException(e.code ?? 'unknown');
     }
   }
+
+  /// Loads the activity locations the game's admin has revealed to players.
+  ///
+  /// Returns each revealed activity's id mapped to its location, without the
+  /// scoring distance. The map is empty while nothing is revealed. Throws
+  /// [SolutionException] when the server refuses, and other exceptions on
+  /// network failure.
+  Future<Map<String, GeoSolution>> loadRevealed() async {
+    try {
+      final Object? data = await _client.rpc('revealed_activity_locations');
+      if (data is! List<dynamic>) throw const SolutionException('unknown');
+      return <String, GeoSolution>{
+        for (final Object? row in data)
+          if (row case {
+            'activity_id': final String id,
+            'lat': final num lat,
+            'lng': final num lng,
+          })
+            id: GeoSolution(lat: lat.toDouble(), lng: lng.toDouble()),
+      };
+    } on PostgrestException catch (e) {
+      throw SolutionException(e.code ?? 'unknown');
+    }
+  }
 }

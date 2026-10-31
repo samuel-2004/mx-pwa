@@ -2,21 +2,29 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:latlong2/latlong.dart' show LatLng;
 import 'package:powersync/powersync.dart' show PowerSyncDatabase, SyncStatus;
 
 import '../auth/auth_state.dart';
 import '../auth/auth_scope.dart';
 import '../data/activity_list.dart';
+import '../data/activity_notes.dart' show ActivityTag;
+import '../data/activity_solution.dart' show ActivitySolutionApi;
+import '../data/geo.dart' show GeoSolution;
 import '../layout/app_scaffold.dart';
 import '../orient_ui/button.dart';
 import '../orient_ui/empty_state.dart';
+import '../orient_ui/info_banner.dart';
 import '../orient_ui/style.dart';
+import '../router/routes.dart';
+import '../widgets/geo_map.dart';
+import '../widgets/loading_spinner.dart';
+import '../widgets/picker.dart' show MultiPicker;
+import '../widgets/surface_card.dart';
+import '../widgets/tag_chips.dart';
+import '../orient_ui/popup.dart';
 import '../orient_ui/tag.dart';
 import '../orient_ui/tappable_icon.dart';
-import '../router/routes.dart';
-import '../widgets/loading_spinner.dart';
-import '../widgets/surface_card.dart';
-import '../widgets/activity_map.dart';
 
 String _formatLocal(DateTime utc) {
   final DateTime t = utc.toLocal();
@@ -39,7 +47,10 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
   Stream<List<ActivityListItem>>? _activities;
   String? _userId;
   Timer? _clock;
+  Set<String> _tagFilter = <String>{};
   bool _showMap = false;
+  final ActivitySolutionApi _locationApi = ActivitySolutionApi();
+  Future<Map<String, GeoSolution>>? _revealed;
 
   @override
   void initState() {
@@ -59,6 +70,14 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
     _activities = userId == null ? null : watchActivities(widget.db, userId);
   }
 
+  void _toggleMap() {
+    setState(() {
+      _showMap = !_showMap;
+      // Read again on each open so newly revealed locations appear.
+      if (_showMap) _revealed = _locationApi.loadRevealed();
+    });
+  }
+
   @override
   void dispose() {
     _clock?.cancel();
@@ -74,6 +93,13 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
     return AppScaffold(
       title: 'Activities',
       fullWidthBody: true,
+      actions: <Widget>[
+        TappableIcon(
+          icon: Icon(_showMap ? Icons.list : Icons.map_outlined),
+          tooltip: _showMap ? 'Show list' : 'Show map',
+          onPressed: _toggleMap,
+        ),
+      ],
       floatingActionButton: isAdmin
           ? Button.small(
               label: 'New activity',
@@ -93,26 +119,18 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
           if (!snap.hasData) return const LoadingSpinner();
           final List<ActivityListItem> items = snap.requireData;
           if (items.isEmpty) return _EmptyState(db: widget.db, isAdmin: isAdmin);
-          if (_showMap) {
-            return ActivityMap(
-              items: items,
-              canViewOutsideGameWindow: canViewOutsideGameWindow,
-            );
-          }
           return _ActivityList(
             items: items,
             isAdmin: isAdmin,
             canViewOutsideGameWindow: canViewOutsideGameWindow,
+            tagFilter: _tagFilter,
+            onTagFilterChanged: (Set<String> tags) =>
+                setState(() => _tagFilter = tags),
+            showMap: _showMap,
+            revealed: _revealed,
           );
         },
       ),
-      actions: <Widget>[
-        TappableIcon(
-          icon: Icon(_showMap ? Icons.list_alt : Icons.map_outlined),
-          tooltip: _showMap ? 'Show list' : 'Show map',
-          onPressed: () => setState(() => _showMap = !_showMap),
-        ),
-      ],
     );
   }
 }
@@ -146,24 +164,74 @@ class _ActivityList extends StatelessWidget {
     required this.items,
     required this.isAdmin,
     required this.canViewOutsideGameWindow,
+    required this.tagFilter,
+    required this.onTagFilterChanged,
+    required this.showMap,
+    required this.revealed,
   });
 
   final List<ActivityListItem> items;
   final bool isAdmin;
   final bool canViewOutsideGameWindow;
+  final Set<String> tagFilter;
+  final ValueChanged<Set<String>> onTagFilterChanged;
+  final bool showMap;
+
+  /// Locations the admin has revealed, keyed by activity id. Set whenever
+  /// [showMap] is true.
+  final Future<Map<String, GeoSolution>>? revealed;
 
   @override
   Widget build(BuildContext context) {
     final DateTime now = DateTime.now().toUtc();
-    final List<ActivityListItem> visibleItems = canViewOutsideGameWindow
+    final List<ActivityListItem> available = canViewOutsideGameWindow
         ? items
         : <ActivityListItem>[
             for (final ActivityListItem item in items)
               if (item.gameWindowIsOpenAt(now)) item,
           ];
-    if (visibleItems.isEmpty) {
+    if (available.isEmpty) {
       return const EmptyState(title: 'No activities are available right now.');
     }
+    final List<String> tagNames = _tagNames(available);
+    // A tag that no longer exists must not keep hiding activities.
+    final Set<String> active = tagFilter.intersection(tagNames.toSet());
+    final List<ActivityListItem> visible = active.isEmpty
+        ? available
+        : <ActivityListItem>[
+            for (final ActivityListItem item in available)
+              if (item.tags.any((ActivityTag tag) => active.contains(tag.name)))
+                item,
+          ];
+    return Column(
+      children: <Widget>[
+        if (tagNames.isNotEmpty)
+          PageContent(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+              child: MultiPicker<String>(
+                label: 'Filter by tag',
+                placeholder: 'All activities',
+                items: tagNames,
+                values: active,
+                onChanged: onTagFilterChanged,
+              ),
+            ),
+          ),
+        Expanded(
+          child: showMap
+              ? _map(context, visible, active, now)
+              : _list(context, visible, now),
+        ),
+      ],
+    );
+  }
+
+  Widget _list(
+    BuildContext context,
+    List<ActivityListItem> visibleItems,
+    DateTime now,
+  ) {
     final bool showHeaders =
         visibleItems.any((ActivityListItem i) => i.subsectionName != null);
     final List<Widget> children = <Widget>[];
@@ -193,6 +261,128 @@ class _ActivityList extends StatelessWidget {
       children: children,
     );
   }
+
+  Widget _map(
+    BuildContext context,
+    List<ActivityListItem> visible,
+    Set<String> active,
+    DateTime now,
+  ) {
+    final ColorTokens colors = context.style.colors;
+    return FutureBuilder<Map<String, GeoSolution>>(
+      future: revealed,
+      builder: (
+        BuildContext _,
+        AsyncSnapshot<Map<String, GeoSolution>> snap,
+      ) {
+        final Map<String, GeoSolution> locations =
+            snap.data ?? const <String, GeoSolution>{};
+        final List<GeoMapMarker> markers = <GeoMapMarker>[
+          for (final ActivityListItem item in visible) ...<GeoMapMarker>[
+            if (item.pin case (:final double lat, :final double lng))
+              GeoMapMarker(
+                point: LatLng(lat, lng),
+                color: item.tags.isEmpty
+                    ? colors.button.link
+                    : tagColor(item.tags.first.color),
+                onTap: () => _showPin(context, item, now, 'Your pin'),
+              ),
+            if (locations[item.id] case final GeoSolution location)
+              GeoMapMarker(
+                point: LatLng(location.lat, location.lng),
+                color: colors.warning,
+                icon: Icons.flag_rounded,
+                onTap: () => _showPin(context, item, now, 'Activity location'),
+              ),
+          ],
+        ];
+        if (markers.isEmpty) {
+          if (snap.connectionState != ConnectionState.done) {
+            return const LoadingSpinner();
+          }
+          return EmptyState(
+            title: snap.hasError
+                ? 'Could not load activity locations.'
+                : 'No pins yet.',
+            description: snap.hasError
+                ? null
+                : 'Drop a pin in an activity\'s notes to see it here. '
+                    'Activity locations appear once your game admin reveals '
+                    'them.',
+          );
+        }
+        return Column(
+          children: <Widget>[
+            if (snap.hasError)
+              const InfoBanner(
+                title: 'Could not load activity locations.',
+                variant: InfoBannerVariant.warning,
+              ),
+            Expanded(
+              child: LayoutBuilder(
+                builder: (BuildContext _, BoxConstraints constraints) =>
+                    GeoMap(
+                  // A new key refits the camera when the filter changes or
+                  // the revealed locations arrive.
+                  key: ValueKey<String>('${active.join('|')}#${locations.length}'),
+                  markers: markers,
+                  height: constraints.maxHeight,
+                  borderRadius: BorderRadius.zero,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showPin(
+    BuildContext context,
+    ActivityListItem item,
+    DateTime now,
+    String kind,
+  ) {
+    unawaited(
+      Popup.show(
+        context: context,
+        title: item.name,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          spacing: 12,
+          children: <Widget>[
+            Text(kind, style: context.typography.bodySmall.muted(context)),
+            if (item.tags.isNotEmpty || item.suburb != null)
+              TagChips(tags: item.tags, suburb: item.suburb),
+            if (item.opensAfter(now) == null)
+              Builder(
+                builder: (BuildContext popupContext) => Button.small(
+                  label: 'Open activity',
+                  onPressed: () {
+                    Navigator.of(popupContext).pop();
+                    context.push(Routes.activity(item.id));
+                  },
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Lists the distinct tag names on [items], sorted without regard to case.
+///
+/// [items] the activities to read tags from. Returns the names. Does not
+/// throw.
+List<String> _tagNames(List<ActivityListItem> items) {
+  final Set<String> names = <String>{
+    for (final ActivityListItem item in items)
+      for (final ActivityTag tag in item.tags) tag.name,
+  };
+  return names.toList()
+    ..sort((String a, String b) => a.toLowerCase().compareTo(b.toLowerCase()));
 }
 
 class _ActivityTile extends StatelessWidget {
@@ -253,6 +443,9 @@ class _ActivityTile extends StatelessWidget {
               label: '$points points',
               color: context.style.colors.foreground,
             ),
+      footer: item.tags.isEmpty && item.suburb == null
+          ? null
+          : TagChips(tags: item.tags, suburb: item.suburb),
       onTap: opensAt == null
           ? () => context.push(Routes.activity(item.id))
           : null,

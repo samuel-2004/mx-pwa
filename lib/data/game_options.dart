@@ -67,6 +67,10 @@ const String codeRedemptionOptionKey = 'code_redemption_enabled';
 const String allowUnregisteredUsersToJoinOptionKey =
     'allow_unregistered_users_to_join';
 
+/// Key controlling whether players can see location activities on the map.
+/// Keep in sync with `revealed_activity_locations` in the database.
+const String revealLocationsOptionKey = 'reveal_locations';
+
 const List<GameOption> gameOptions = [
   GameOption(
     key: 'scoreboard_enabled',
@@ -113,6 +117,16 @@ const List<GameOption> gameOptions = [
     description: 'When off, only people you add can join.',
     type: GameOptionType.boolean,
     defaultValue: true,
+  ),
+
+  GameOption(
+    key: revealLocationsOptionKey,
+    name: 'Reveal activity locations',
+    description:
+        'Players can see where location activities are on their map. '
+        'This shows the answer, so turn it on when the answers are public.',
+    type: GameOptionType.boolean,
+    defaultValue: false,
   ),
 ];
 
