@@ -326,7 +326,8 @@ class _PopupRoute extends PageRouteBuilder {
 
     // Close on Escape key
     return KeyboardListener(
-      focusNode: _focusNode..requestFocus(),
+      focusNode: _focusNode,
+      autofocus: true,
       onKeyEvent: (event) {
         if (event is KeyDownEvent &&
             event.logicalKey == LogicalKeyboardKey.escape) {
