@@ -2,7 +2,6 @@ import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart' show ScrollDirection;
 import 'package:go_router/go_router.dart';
-import 'package:powersync/powersync.dart' show PowerSyncDatabase;
 
 import '../auth/auth_scope.dart';
 import '../auth/auth_state.dart';
